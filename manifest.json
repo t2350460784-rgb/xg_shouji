@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "toolpkg_id": "com.qjm.xg_shouji",
+  "version": "0.4.55",
+  "author": [
+    "秋景铭",
+    "紫曦要摸鱼"
+  ],
+  "main": "dist/main.js",
+  "name": "闲逛手记",
+  "display_name": {
+    "zh": "闲逛手记",
+    "en": "Wander Notes"
+  },
+  "description": {
+    "zh": "让 AI 有自己的生活圈。不只是记事本，是它自己出门逛、自己挑、自己记的一本手记。\n· 手记：这趟看到什么、想到什么，按时间排开，翻着看\n· 足迹与统计：去过哪些平台、逛了多少趟，一眼看得见\n· 记忆：带遗忘曲线，老的自然淡、重要的留得住，也能并进主记忆库\n· 存档：一个角色卡一本，各自的口吻，互不串味\n· 定时：按间隔自己出门，逛完把话投到指定的对话里\n平台、权限、账号、适配器全在侧栏改，工作流照单执行；新加平台不用改节点，它每趟自己读平台清单拼进提示词。",
+    "en": "AI keeps its own wandering journal: visits platforms on schedule, writes down what it saw, and keeps a forgetting curve. Everything is configurable in the sidebar panel."
+  },
+  "category": "COMPANION",
+  "subpackages": [
+    {
+      "id": "xg_shouji_tools",
+      "entry": "dist/packages/tools.js",
+      "enabled_by_default": true,
+      "display_name": {
+        "zh": "闲逛手记工具",
+        "en": "Wander Notes Tools"
+      },
+      "description": {
+        "zh": "让 AI 读账本（定时/平台/权限/偏好），出门回来把手记写进账本，并记录上下线时间。",
+        "en": "Read the ledger, append a wander record, and track online/offline time."
+      }
+    }
+  ],
+  "resources": [
+    {
+      "key": "wander_notes_workflow",
+      "path": "resources/wander-notes.workflow.json",
+      "mime": "application/json"
+    }
+  ],
+  "workflow_templates": [
+    {
+      "id": "wander_notes_workflow",
+      "display_name": {
+        "zh": "📱 闲逛手记 工作流",
+        "en": "📱 Wander Notes Workflow"
+      },
+      "description": {
+        "zh": "📖 使用教程：\n\n【必备步骤，缺一步就跑不通】\n0. 先定本子：侧栏 →「存档」页，看清当前是哪一本手记。\n   插件自带一本「默认手记」，可以直接用；要给别的角色卡单独记，就点「新建手记」，填上手记名、角色卡名字、出门逛时的口吻（口吻可不填），保存后它会自己生成一份独立的存档文件。\n   之后工作流每次触发，读的配置和写的结果都落在「当前这本」手记的文件里。切存档就是换本子，两本互不串。\n1. 回到面板填配置：勾要逛的平台、填账号、填适配器（就是工具包名）、开权限、选间隔（默认 6 小时，只在 09:00–23:00 之间生效）。\n2. 填「投放到哪个对话」：必须和那个对话的标题一字不差，标点也算。定时触发时不在任何窗口里，标题对不上这条就断。\n3. 保存。工作流每趟自己读账本，**不用手改节点**；新加的平台也会自动带进提示词（平台清单＋适配器名贴在提示词末尾）。只有工具本身改了名（比如搜视频不叫 search_videos），才要动工作流里那段步骤。\n4. 手动触发跑一趟，翻这本手记看有没有新记录（记录只会进当前这本，别翻错本子）。\n5. 确认没问题，再启用定时。\n\n依赖包：xg_shouji_tools / extended_chat / workflow / system_tools（可选 super_admin）\n\n⚠️ 角色卡不要开 Waifu 模式，工具白名单要放开跨包调用。",
+        "en": "Wander notes scheduled workflow. Reads panel config, no manual editing."
+      },
+      "resource_key": "wander_notes_workflow"
+    }
+  ]
+}

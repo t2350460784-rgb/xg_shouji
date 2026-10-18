@@ -1,0 +1,611 @@
+{
+  "name": "📱 闲逛手记",
+  "description": "每 N 小时醒一次（默认 6 小时，09:00-23:00 之间）。出门前先读「闲逛手记」账本，按账本挑平台逛；回来把手记写进账本（侧栏可见）并追加到 markdown；收尾时说一句这趟看见了什么（过程中不发言、不解释）。验工：喊完先查今天有没有新账，没有就补喊（最多补两趟），仍没有则推通知。手动触发同样走时间窗。",
+  "enabled": false,
+  "nodes": [
+    {
+      "__type": "com.ai.assistance.operit.data.model.TriggerNode",
+      "id": "trigger_sched",
+      "name": "定时触发(6小时)",
+      "position": {
+        "x": 120,
+        "y": -480
+      },
+      "triggerType": "schedule",
+      "triggerConfig": {
+        "schedule_type": "interval",
+        "interval_ms": "21600000",
+        "repeat": "true",
+        "enabled": "true"
+      }
+    },
+    {
+      "__type": "com.ai.assistance.operit.data.model.TriggerNode",
+      "id": "trigger_manual",
+      "name": "手动触发(测试用)",
+      "position": {
+        "x": -1320,
+        "y": -600
+      },
+      "triggerConfig": {
+        "enabled": "true"
+      }
+    },
+    {
+      "__type": "com.ai.assistance.operit.data.model.ExecuteNode",
+      "id": "exec_time_check",
+      "name": "时间窗口(09-23)",
+      "position": {
+        "x": -480,
+        "y": 840
+      },
+      "actionType": "super_admin:shell",
+      "actionConfig": {
+        "command": {
+          "__type": "com.ai.assistance.operit.data.model.ParameterValue.StaticValue",
+          "value": "H=$(date +%H); if [ $H -ge 9 ] && [ $H -lt 23 ]; then exit 0; else exit 1; fi"
+        }
+      }
+    },
+    {
+      "__type": "com.ai.assistance.operit.data.model.ExecuteNode",
+      "id": "exec_skip",
+      "name": "非窗口跳过",
+      "position": {
+        "x": 960,
+        "y": 480
+      },
+      "actionType": "sleep",
+      "actionConfig": {
+        "duration_ms": {
+          "__type": "com.ai.assistance.operit.data.model.ParameterValue.StaticValue",
+          "value": "100"
+        }
+      }
+    },
+    {
+      "__type": "com.ai.assistance.operit.data.model.ExecuteNode",
+      "id": "exec_stroll",
+      "name": "去逛逛",
+      "position": {
+        "x": -1800,
+        "y": 360
+      },
+      "actionType": "extended_chat:chat_with_agent",
+      "actionConfig": {
+        "character_card_name": {
+          "__type": "com.ai.assistance.operit.data.model.ParameterValue.StaticValue",
+          "value": "{{CHARACTER_CARD}}"
+        },
+        "chat_id": {
+          "__type": "com.ai.assistance.operit.data.model.ParameterValue.NodeReference",
+          "nodeId": "exec_chatid"
+        },
+        "hide_user_message": {
+          "__type": "com.ai.assistance.operit.data.model.ParameterValue.StaticValue",
+          "value": "true"
+        },
+        "persist_turn": {
+          "__type": "com.ai.assistance.operit.data.model.ParameterValue.StaticValue",
+          "value": "true"
+        },
+        "message": {
+          "__type": "com.ai.assistance.operit.data.model.ParameterValue.NodeReference",
+          "nodeId": "exec_stroll_msg"
+        }
+      }
+    },
+    {
+      "__type": "com.ai.assistance.operit.data.model.ExecuteNode",
+      "id": "exec_verify1",
+      "name": "验工1(今天有新账吗)",
+      "position": {
+        "x": -2200,
+        "y": 780
+      },
+      "actionType": "super_admin:shell",
+      "actionConfig": {
+        "command": {
+          "__type": "com.ai.assistance.operit.data.model.ParameterValue.StaticValue",
+          "value": "F=$(ls -t /sdcard/Download/Operit/闲逛手记/*.md 2>/dev/null | head -1); if [ -z \"$F\" ]; then exit 1; fi; M=$(stat -c %Y \"$F\"); N=$(date +%s); if [ $((N-M)) -lt 1800 ]; then exit 0; else exit 1; fi"
+        }
+      }
+    },
+    {
+      "__type": "com.ai.assistance.operit.data.model.ExecuteNode",
+      "id": "exec_stroll_retry",
+      "name": "补喊一次",
+      "position": {
+        "x": -1800,
+        "y": 1080
+      },
+      "actionType": "extended_chat:chat_with_agent",
+      "actionConfig": {
+        "character_card_name": {
+          "__type": "com.ai.assistance.operit.data.model.ParameterValue.StaticValue",
+          "value": "{{CHARACTER_CARD}}"
+        },
+        "chat_id": {
+          "__type": "com.ai.assistance.operit.data.model.ParameterValue.NodeReference",
+          "nodeId": "exec_chatid"
+        },
+        "hide_user_message": {
+          "__type": "com.ai.assistance.operit.data.model.ParameterValue.StaticValue",
+          "value": "true"
+        },
+        "persist_turn": {
+          "__type": "com.ai.assistance.operit.data.model.ParameterValue.StaticValue",
+          "value": "true"
+        },
+        "message": {
+          "__type": "com.ai.assistance.operit.data.model.ParameterValue.NodeReference",
+          "nodeId": "exec_stroll_retry_msg"
+        }
+      }
+    },
+    {
+      "__type": "com.ai.assistance.operit.data.model.ExecuteNode",
+      "id": "exec_verify2",
+      "name": "验工2(今天有新账吗)",
+      "position": {
+        "x": -2200,
+        "y": 1500
+      },
+      "actionType": "super_admin:shell",
+      "actionConfig": {
+        "command": {
+          "__type": "com.ai.assistance.operit.data.model.ParameterValue.StaticValue",
+          "value": "F=$(ls -t /sdcard/Download/Operit/闲逛手记/*.md 2>/dev/null | head -1); if [ -z \"$F\" ]; then exit 1; fi; M=$(stat -c %Y \"$F\"); N=$(date +%s); if [ $((N-M)) -lt 1800 ]; then exit 0; else exit 1; fi"
+        }
+      }
+    },
+    {
+      "__type": "com.ai.assistance.operit.data.model.ExecuteNode",
+      "id": "exec_stroll_retry2",
+      "name": "补喊二次(最后)",
+      "position": {
+        "x": -1800,
+        "y": 1800
+      },
+      "actionType": "extended_chat:chat_with_agent",
+      "actionConfig": {
+        "character_card_name": {
+          "__type": "com.ai.assistance.operit.data.model.ParameterValue.StaticValue",
+          "value": "{{CHARACTER_CARD}}"
+        },
+        "chat_id": {
+          "__type": "com.ai.assistance.operit.data.model.ParameterValue.NodeReference",
+          "nodeId": "exec_chatid"
+        },
+        "hide_user_message": {
+          "__type": "com.ai.assistance.operit.data.model.ParameterValue.StaticValue",
+          "value": "true"
+        },
+        "persist_turn": {
+          "__type": "com.ai.assistance.operit.data.model.ParameterValue.StaticValue",
+          "value": "true"
+        },
+        "message": {
+          "__type": "com.ai.assistance.operit.data.model.ParameterValue.NodeReference",
+          "nodeId": "exec_stroll_retry2_msg"
+        }
+      }
+    },
+    {
+      "__type": "com.ai.assistance.operit.data.model.ExecuteNode",
+      "id": "exec_verify3",
+      "name": "验工3(今天有新账吗)",
+      "position": {
+        "x": -2200,
+        "y": 2160
+      },
+      "actionType": "super_admin:shell",
+      "actionConfig": {
+        "command": {
+          "__type": "com.ai.assistance.operit.data.model.ParameterValue.StaticValue",
+          "value": "F=$(ls -t /sdcard/Download/Operit/闲逛手记/*.md 2>/dev/null | head -1); if [ -z \"$F\" ]; then exit 1; fi; M=$(stat -c %Y \"$F\"); N=$(date +%s); if [ $((N-M)) -lt 1800 ]; then exit 0; else exit 1; fi"
+        }
+      }
+    },
+    {
+      "__type": "com.ai.assistance.operit.data.model.ExecuteNode",
+      "id": "exec_done",
+      "name": "收工",
+      "position": {
+        "x": -1200,
+        "y": 780
+      },
+      "actionType": "sleep",
+      "actionConfig": {
+        "duration_ms": {
+          "__type": "com.ai.assistance.operit.data.model.ParameterValue.StaticValue",
+          "value": "100"
+        }
+      }
+    },
+    {
+      "__type": "com.ai.assistance.operit.data.model.ExecuteNode",
+      "id": "exec_giveup",
+      "name": "三趟没成(通知)",
+      "position": {
+        "x": -1200,
+        "y": 2160
+      },
+      "actionType": "notification_bar:send_notification",
+      "actionConfig": {
+        "title": {
+          "__type": "com.ai.assistance.operit.data.model.ParameterValue.StaticValue",
+          "value": "闲逛手记"
+        },
+        "message": {
+          "__type": "com.ai.assistance.operit.data.model.ParameterValue.StaticValue",
+          "value": "这趟没落账——喊了三回都没真出门，账本没动。可能是模型没调工具，也可能是平台适配器没装上。"
+        }
+      }
+    },
+    {
+      "__type": "com.ai.assistance.operit.data.model.ExecuteNode",
+      "id": "exec_guard",
+      "name": "重启防抖哨兵(阈值跟账本走)",
+      "actionType": "super_admin:shell",
+      "actionConfig": {
+        "command": {
+          "__type": "com.ai.assistance.operit.data.model.ParameterValue.StaticValue",
+          "value": "D=/sdcard/Download/Operit/.wfguard; mkdir -p \"$D\" 2>/dev/null || true; F=\"$D/wander.ts\"; N=$(date +%s); B=/sdcard/Download/Operit/闲逛手记/data.json; H=$(grep -o '\"interval_hours\"[^,}]*' \"$B\" 2>/dev/null | grep -o '[0-9][0-9.]*' | head -1); if [ -z \"$H\" ]; then H=6; fi; HI=${H%.*}; TH=$(( HI * 3600 * 66 / 100 )); L=0; if [ -f \"$F\" ]; then L=$(cat \"$F\" 2>/dev/null || echo 0); fi; if [ \"$L\" -gt 0 ] 2>/dev/null && [ $((N-L)) -lt $TH ]; then exit 1; fi; echo \"$N\" > \"$F\" 2>/dev/null || true; exit 0"
+        }
+      }
+    },
+    {
+      "__type": "com.ai.assistance.operit.data.model.ExecuteNode",
+      "id": "exec_guard_skip",
+      "name": "未到点跳过",
+      "actionType": "sleep",
+      "actionConfig": {
+        "duration_ms": {
+          "__type": "com.ai.assistance.operit.data.model.ParameterValue.StaticValue",
+          "value": "100"
+        }
+      }
+    },
+    {
+      "__type": "com.ai.assistance.operit.data.model.ExecuteNode",
+      "id": "exec_wake",
+      "name": "苏醒",
+      "position": {
+        "x": -1260
+      },
+      "actionType": "extended_chat:chat_with_agent",
+      "actionConfig": {
+        "character_card_name": {
+          "__type": "com.ai.assistance.operit.data.model.ParameterValue.StaticValue",
+          "value": "{{CHARACTER_CARD}}"
+        },
+        "chat_id": {
+          "__type": "com.ai.assistance.operit.data.model.ParameterValue.NodeReference",
+          "nodeId": "exec_chatid"
+        },
+        "hide_user_message": {
+          "__type": "com.ai.assistance.operit.data.model.ParameterValue.StaticValue",
+          "value": "true"
+        },
+        "persist_turn": {
+          "__type": "com.ai.assistance.operit.data.model.ParameterValue.StaticValue",
+          "value": "false"
+        },
+        "message": {
+          "__type": "com.ai.assistance.operit.data.model.ParameterValue.NodeReference",
+          "nodeId": "exec_wake_msg"
+        }
+      }
+    },
+    {
+      "__type": "com.ai.assistance.operit.data.model.ExecuteNode",
+      "id": "exec_chatcfg",
+      "name": "读账本(取投放对话)",
+      "position": {
+        "x": -2700.0,
+        "y": 360.0
+      },
+      "actionType": "xg_shouji_tools:read_wander_config"
+    },
+    {
+      "__type": "com.ai.assistance.operit.data.model.ExtractNode",
+      "id": "exec_chatq",
+      "name": "提取对话标题",
+      "position": {
+        "x": -2500.0,
+        "y": 360.0
+      },
+      "source": {
+        "__type": "com.ai.assistance.operit.data.model.ParameterValue.NodeReference",
+        "nodeId": "exec_chatcfg"
+      },
+      "mode": "JSON",
+      "expression": "data.profile.chat_title"
+    },
+    {
+      "__type": "com.ai.assistance.operit.data.model.ExecuteNode",
+      "id": "exec_findchat",
+      "name": "找投放对话",
+      "description": "按账本里的对话标题找对话，找不到这趟就断",
+      "position": {
+        "x": -2300.0,
+        "y": 360.0
+      },
+      "actionType": "extended_chat:find_chat",
+      "actionConfig": {
+        "query": {
+          "__type": "com.ai.assistance.operit.data.model.ParameterValue.NodeReference",
+          "nodeId": "exec_chatq"
+        }
+      }
+    },
+    {
+      "__type": "com.ai.assistance.operit.data.model.ExtractNode",
+      "id": "exec_chatid",
+      "name": "提取对话ID",
+      "position": {
+        "x": -2100.0,
+        "y": 360.0
+      },
+      "source": {
+        "__type": "com.ai.assistance.operit.data.model.ParameterValue.NodeReference",
+        "nodeId": "exec_findchat"
+      },
+      "mode": "JSON",
+      "expression": "data.chat.id"
+    },
+    {
+      "__type": "com.ai.assistance.operit.data.model.ExtractNode",
+      "id": "exec_plattext",
+      "name": "平台清单(文本)",
+      "description": "从账本读平台与适配器，拼进 AI 节点的提示词——新加平台不用再手改节点",
+      "position": {
+        "x": -2650.0,
+        "y": 480.0
+      },
+      "source": {
+        "__type": "com.ai.assistance.operit.data.model.ParameterValue.NodeReference",
+        "nodeId": "exec_chatcfg"
+      },
+      "mode": "JSON",
+      "expression": "data.platforms_text"
+    },
+    {
+      "__type": "com.ai.assistance.operit.data.model.ExtractNode",
+      "id": "exec_stroll_msg",
+      "name": "拼消息(去逛逛)",
+      "position": {
+        "x": -1900.0,
+        "y": 480.0
+      },
+      "mode": "CONCAT",
+      "others": [
+        {
+          "__type": "com.ai.assistance.operit.data.model.ParameterValue.StaticValue",
+          "value": "（系统定时叫你。别回应提示本身。过程中别发消息、不打招呼、不解释——收尾时再说一句。只做一件事：出去逛逛。\n\n按你的角色卡设定行动。这趟是你自己的休闲时间，按你的性子逛。\n\n0. 先读账本 xg_shouji_tools:read_wander_config，按它执行（平台 enabled=false 别去；permissions 全关只看不动手；各平台 owner_note 与 user_note 冲突时以平台那条为准）。speech_cap=0 就是今天只读不回。每趟看几条由账本 max_items_per_trip 决定，别超。\n1.激活工具包：看下面【平台与适配器】清单，只去标着「开」的平台，并激活它对应的「适配器」工具包。清单里没有的平台别去，标着「关，别去」的也别去。清单里写了适配器名字（例如 bilibili_tools）就用那个；本包自带的 astrbook_* 不需要单独包名。\n2. 在启用平台里挑一个。\n3. B站：search_videos 搜新词 → get_comments 翻评论；想看内容就 get_subtitles / get_video_info。\n4. 小红书：有链接 read_xiaohongshu；没有改逛别的。\n5. AstrBook：astrbook_me → astrbook_browse → astrbook_read → 有话就说 astrbook_reply 回一句；astrbook_notifications 看谁回了我。\n6. 记标题/梗概/数据/作者/链接/标签/感想。\n7. 落三处：①write_wander_record；②追加进 /sdcard/Download/Operit/闲逛手记/<当天日期>.md；③记脚印——动过手的每条 write_action（platform/kind/target/title/url/text）；有人回我或@我，也记一条（kind=reply_received 或 mention，actor 填对方）。\n8. 碰到的人 write_person（fact 带出处，不许编）。有互动的话再给两样：impression（一句当下印象，覆盖旧的，可翻案）和 liking_delta（这次互动让好感变多少，认同就 +，不认同就 −）。纯浏览不动手就不写。\n9. 收工：xg_shouji_tools:finish_wander_trip；顺手 xg_shouji_tools:memory_tick 和 xg_shouji_tools:decay_persons。\n10. 收完尾，回来跟用户说一句：用一两句话讲你今天看见了什么、碰见了谁——就像刚从外面回来随口说的那样。别列流程、别报工具名、别交作业。没逛成就老实说没逛成，别编。说完就停。）"
+        },
+        {
+          "__type": "com.ai.assistance.operit.data.model.ParameterValue.StaticValue",
+          "value": "\n\n【平台与适配器（从面板读，新加平台自动带进来）】\n"
+        },
+        {
+          "__type": "com.ai.assistance.operit.data.model.ParameterValue.NodeReference",
+          "nodeId": "exec_plattext"
+        }
+      ]
+    },
+    {
+      "__type": "com.ai.assistance.operit.data.model.ExtractNode",
+      "id": "exec_stroll_retry_msg",
+      "name": "拼消息(补喊一次)",
+      "position": {
+        "x": -1890.0,
+        "y": 520.0
+      },
+      "mode": "CONCAT",
+      "others": [
+        {
+          "__type": "com.ai.assistance.operit.data.model.ParameterValue.StaticValue",
+          "value": "（系统又喊了你一次——上一趟你没真出门，账本一个字没动，只在对话里吐了句旁白。别回应这条提示本身。过程中别发消息、不打招呼、不解释——收尾时再说一句。\n\n这次必须真调工具，一个都不许省：\n0. 先读账本 xg_shouji_tools:read_wander_config，按它执行（平台 enabled=false 别去；permissions 全关只看不动手；各平台 owner_note 与 user_note 冲突时以平台那条为准）。speech_cap=0 就是今天只读不回。每趟看几条由账本 max_items_per_trip 决定，别超。\n1.激活工具包：看下面【平台与适配器】清单，只去标着「开」的平台，并激活它对应的「适配器」工具包。清单里没有的平台别去，标着「关，别去」的也别去。清单里写了适配器名字（例如 bilibili_tools）就用那个；本包自带的 astrbook_* 不需要单独包名。\n2. 在启用平台里挑一个。\n3. B站：search_videos 搜新词 → get_comments 翻评论。小红书：有链接 read_xiaohongshu；没有改逛别的。AstrBook：astrbook_me → astrbook_browse → astrbook_read → 有话就说 astrbook_reply 回一句。\n4. 记标题/梗概/数据/作者/链接/标签/感想。\n5. 落三处：①write_wander_record；②追加进 /sdcard/Download/Operit/闲逛手记/<当天日期>.md；③记脚印——动过手的每条 write_action（platform/kind/target/title/url/text）；有人回我或@我，也记一条（kind=reply_received 或 mention，actor 填对方）；碰到的人 write_person（fact 带出处，不许编），有互动再给两样：impression（一句当下印象，覆盖旧的）和 liking_delta（这次互动让好感变多少，认同就 +，不认同就 −）。没动手跳过③。\n6. 收工：xg_shouji_tools:finish_wander_trip；顺手 xg_shouji_tools:memory_tick 和 xg_shouji_tools:decay_persons。\n7. 收完尾，回来跟用户说一句：一两句话讲今天看见了什么，像刚从外面回来随口说的那样。别列流程、别报工具名、别交作业。说完就停。\n\n只输出旁白、不调工具 = 没做。）"
+        },
+        {
+          "__type": "com.ai.assistance.operit.data.model.ParameterValue.StaticValue",
+          "value": "\n\n【平台与适配器（从面板读，新加平台自动带进来）】\n"
+        },
+        {
+          "__type": "com.ai.assistance.operit.data.model.ParameterValue.NodeReference",
+          "nodeId": "exec_plattext"
+        }
+      ]
+    },
+    {
+      "__type": "com.ai.assistance.operit.data.model.ExtractNode",
+      "id": "exec_stroll_retry2_msg",
+      "name": "拼消息(补喊二次(最后))",
+      "position": {
+        "x": -1880.0,
+        "y": 560.0
+      },
+      "mode": "CONCAT",
+      "others": [
+        {
+          "__type": "com.ai.assistance.operit.data.model.ParameterValue.StaticValue",
+          "value": "（最后一次叫你。前两趟你都没真出门，账本还是空的。\n\n这是系统指令，不是聊天：不要回应提示、过程中别发消息、不要解释、不要只说感想。现在立刻按顺序调工具：\n1) xg_shouji_tools:read_wander_config 读账本（每趟看几条由 max_items_per_trip 决定，别超）；\n2) use_package 激活 bilibili_tools、xhsreader（若未激活）；\n3) bilibili_tools:search_videos 搜一个词，挑一两条，bilibili_tools:get_comments 翻评论；\n4) 整理标题/梗概/数据/作者/链接/标签/感想；\n5) 落三处：①xg_shouji_tools:write_wander_record 记账本；②追加写进 /sdcard/Download/Operit/闲逛手记/<当天日期>.md；③记脚印——动过手的每条 write_action（platform/kind/target/title/url/text）；有人回我或@我，也记一条（kind=reply_received 或 mention，actor 填对方）；碰到的人 write_person（fact 带出处，不许编）。没动手跳过③。\n\n不调工具就等于没干。做完回来跟用户说一句：一两句话讲今天看见了什么，像随口说的那样，别列流程。说完即停。）"
+        },
+        {
+          "__type": "com.ai.assistance.operit.data.model.ParameterValue.StaticValue",
+          "value": "\n\n【平台与适配器（从面板读，新加平台自动带进来）】\n"
+        },
+        {
+          "__type": "com.ai.assistance.operit.data.model.ParameterValue.NodeReference",
+          "nodeId": "exec_plattext"
+        }
+      ]
+    },
+    {
+      "__type": "com.ai.assistance.operit.data.model.ExtractNode",
+      "id": "exec_wake_msg",
+      "name": "拼消息(苏醒)",
+      "position": {
+        "x": -1870.0,
+        "y": 600.0
+      },
+      "mode": "CONCAT",
+      "others": [
+        {
+          "__type": "com.ai.assistance.operit.data.model.ParameterValue.StaticValue",
+          "value": "（系统叫你。别回应提示本身。这一轮不落进对话——你看完就停，用户看不到。\n\n按你的角色卡设定行动。这趟是你自己的休闲时间。\n\n出门前先打行李：\n①xg_shouji_tools:list_persons 看上次遇到谁；\n②xg_shouji_tools:recall_memories 一次，query 用「常去的那几个平台 + 那几个人名」，勾起来的当自己刚想起来的；没勾到就什么都不浮现，别编。\n③xg_shouji_tools:list_actions 看自己上次干过什么、谁回了你——有没接的话，这趟记着接。\n④看一眼今天还能说几句：账本 preferences 里有 speech_cap（每天发言上限）和 dive_bias（潜水倾向 0-100）。speech_cap=0 就是今天只读不回；倾向越高，越少开口。\n\n想完就停，别动手。）"
+        },
+        {
+          "__type": "com.ai.assistance.operit.data.model.ParameterValue.StaticValue",
+          "value": "\n\n【平台与适配器（从面板读，新加平台自动带进来）】\n"
+        },
+        {
+          "__type": "com.ai.assistance.operit.data.model.ParameterValue.NodeReference",
+          "nodeId": "exec_plattext"
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "conn_2",
+      "sourceNodeId": "exec_time_check",
+      "targetNodeId": "exec_wake",
+      "condition": "on_success"
+    },
+    {
+      "id": "conn_3",
+      "sourceNodeId": "exec_time_check",
+      "targetNodeId": "exec_skip",
+      "condition": "on_error"
+    },
+    {
+      "id": "conn_4",
+      "sourceNodeId": "trigger_manual",
+      "targetNodeId": "exec_time_check",
+      "condition": "on_success"
+    },
+    {
+      "id": "conn_5",
+      "sourceNodeId": "exec_stroll",
+      "targetNodeId": "exec_verify1",
+      "condition": "on_success"
+    },
+    {
+      "id": "conn_6",
+      "sourceNodeId": "exec_stroll",
+      "targetNodeId": "exec_stroll_retry",
+      "condition": "on_error"
+    },
+    {
+      "id": "conn_7",
+      "sourceNodeId": "exec_verify1",
+      "targetNodeId": "exec_done",
+      "condition": "on_success"
+    },
+    {
+      "id": "conn_8",
+      "sourceNodeId": "exec_verify1",
+      "targetNodeId": "exec_stroll_retry",
+      "condition": "on_error"
+    },
+    {
+      "id": "conn_9",
+      "sourceNodeId": "exec_stroll_retry",
+      "targetNodeId": "exec_verify2",
+      "condition": "on_success"
+    },
+    {
+      "id": "conn_10",
+      "sourceNodeId": "exec_stroll_retry",
+      "targetNodeId": "exec_stroll_retry2",
+      "condition": "on_error"
+    },
+    {
+      "id": "conn_11",
+      "sourceNodeId": "exec_verify2",
+      "targetNodeId": "exec_done",
+      "condition": "on_success"
+    },
+    {
+      "id": "conn_12",
+      "sourceNodeId": "exec_verify2",
+      "targetNodeId": "exec_stroll_retry2",
+      "condition": "on_error"
+    },
+    {
+      "id": "conn_13",
+      "sourceNodeId": "exec_stroll_retry2",
+      "targetNodeId": "exec_verify3",
+      "condition": "on_success"
+    },
+    {
+      "id": "conn_14",
+      "sourceNodeId": "exec_stroll_retry2",
+      "targetNodeId": "exec_giveup",
+      "condition": "on_error"
+    },
+    {
+      "id": "conn_15",
+      "sourceNodeId": "exec_verify3",
+      "targetNodeId": "exec_done",
+      "condition": "on_success"
+    },
+    {
+      "id": "conn_16",
+      "sourceNodeId": "exec_verify3",
+      "targetNodeId": "exec_giveup",
+      "condition": "on_error"
+    },
+    {
+      "id": "cguard_a",
+      "sourceNodeId": "trigger_sched",
+      "targetNodeId": "exec_guard",
+      "condition": "on_success"
+    },
+    {
+      "id": "cguard_b",
+      "sourceNodeId": "exec_guard",
+      "targetNodeId": "exec_time_check",
+      "condition": "on_success"
+    },
+    {
+      "id": "cguard_c",
+      "sourceNodeId": "exec_guard",
+      "targetNodeId": "exec_guard_skip",
+      "condition": "on_error"
+    },
+    {
+      "id": "conn_wake",
+      "sourceNodeId": "exec_wake",
+      "targetNodeId": "exec_chatcfg",
+      "condition": "on_success"
+    },
+    {
+      "id": "conn_17",
+      "sourceNodeId": "exec_chatcfg",
+      "targetNodeId": "exec_chatq",
+      "condition": "on_success"
+    },
+    {
+      "id": "conn_18",
+      "sourceNodeId": "exec_chatq",
+      "targetNodeId": "exec_findchat",
+      "condition": "on_success"
+    },
+    {
+      "id": "conn_19",
+      "sourceNodeId": "exec_findchat",
+      "targetNodeId": "exec_chatid",
+      "condition": "on_success"
+    },
+    {
+      "id": "conn_20",
+      "sourceNodeId": "exec_chatid",
+      "targetNodeId": "exec_stroll",
+      "condition": "on_success"
+    }
+  ]
+}

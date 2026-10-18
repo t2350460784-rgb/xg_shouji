@@ -1,0 +1,8 @@
+__pycache__/
+*.bak*
+dist_public/
+_bak/
+_test/
+_build.toolpkg
+*.toolpkg
+!xg_shouji-*-public.toolpkg

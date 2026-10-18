@@ -1,0 +1,2728 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<title>闲逛手记</title>
+<style>
+:root{
+  --bg:#FBF7F9; --paper:#FFFFFF; --paper2:#FDFAFC;
+  --ink:#2B2430; --ink2:#6B6270; --ink3:#A198A8;
+  --line:#EFE6EC; --line2:#E4D8E0;
+  --pink:#D6336C; --pink2:#B32A59; --pink-soft:#FDEAF1; --pink-line:#F7C9DC;
+  --amber:#E07B39; --green:#3FA76A; --blue:#4C7DC4; --violet:#8B5FC0; --teal:#2E9CA8;
+  --r:16px; --r2:12px;
+  --sh:0 1px 2px rgba(90,60,80,.05), 0 6px 18px rgba(90,60,80,.05);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--ink);
+  font-family:-apple-system,"PingFang SC","Noto Sans CJK SC","Microsoft YaHei",sans-serif;
+  font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+body{padding-bottom:40px}
+#app{max-width:760px;margin:0 auto}
+
+/* ---------- 顶栏 ---------- */
+.top{padding:16px 16px 6px;display:flex;align-items:center;gap:9px}
+.top .logo{width:30px;height:30px;border-radius:10px;background:linear-gradient(135deg,#F6A6C4,#D6336C);
+  display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;box-shadow:0 3px 10px rgba(214,51,108,.28)}
+.top h1{font-size:19px;margin:0;font-weight:700;letter-spacing:.5px;flex:1}
+.iconbtn{width:34px;height:34px;border-radius:12px;border:1px solid var(--line);background:var(--paper);
+  display:flex;align-items:center;justify-content:center;font-size:15px;color:var(--ink2);cursor:pointer}
+.iconbtn:active{background:var(--pink-soft)}
+.subline{padding:0 16px 10px;font-size:12px;color:var(--ink3);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.subline .pill{padding:2px 9px;border-radius:999px;background:var(--pink-soft);color:var(--pink2);font-size:11px;font-weight:600}
+
+/* ---------- 页签 ---------- */
+.tabs{display:flex;gap:7px;padding:2px 16px 12px;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:0 0 auto;padding:7px 14px;border-radius:999px;background:#F3ECF1;color:var(--ink2);
+  font-size:13px;font-weight:600;cursor:pointer;border:1px solid transparent;transition:.15s}
+.tab.on{background:var(--pink);color:#fff;box-shadow:0 3px 10px rgba(214,51,108,.25)}
+
+/* ---------- 通用 ---------- */
+.wrap{padding:0 16px}
+.card{background:var(--paper);border-radius:var(--r);box-shadow:var(--sh);padding:14px;margin-bottom:11px;border:1px solid var(--line)}
+.card.tight{padding:12px}
+.sec-h{display:flex;align-items:center;gap:7px;margin:16px 0 9px;font-size:15px;font-weight:700}
+.sec-h .bar{width:4px;height:15px;border-radius:2px;background:var(--pink)}
+.muted{color:var(--ink3);font-size:12px;line-height:1.6}
+.hint{color:var(--ink3);font-size:11.5px;line-height:1.65;margin-top:7px}
+.row{display:flex;align-items:center;gap:8px}
+.row.sb{justify-content:space-between}
+.sp{flex:1}
+.divider{height:1px;background:var(--line);margin:11px 0}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:999px;
+  background:#F4EEF3;color:var(--ink2);font-size:12px;cursor:pointer;border:1px solid transparent;white-space:nowrap}
+.chip.on{background:var(--pink-soft);color:var(--pink2);border-color:var(--pink-line);font-weight:600}
+.chips{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:1px}
+.chips::-webkit-scrollbar{display:none}
+.chips.wrapx{flex-wrap:wrap;overflow:visible}
+.chips.scrollable{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 32px),rgba(0,0,0,.06));
+  mask-image:linear-gradient(90deg,#000 calc(100% - 32px),rgba(0,0,0,.06))}
+.chips.scrollable.at-end{-webkit-mask-image:none;mask-image:none}
+.swipe-hint{font-size:10.5px;color:var(--ink3);margin:6px 2px 0;display:flex;align-items:center;gap:5px}
+.swipe-hint b{color:var(--pink2);font-weight:700}
+.swipe-hint.gone{display:none}
+.tag{display:inline-block;padding:2px 9px;border-radius:999px;background:#F1EDF5;color:#6B5A78;
+  font-size:11px;margin:0 5px 5px 0;white-space:nowrap}
+.tag.mine{background:var(--pink-soft);color:var(--pink2)}
+.badge{display:inline-block;padding:1.5px 8px;border-radius:8px;font-size:11px;font-weight:600;color:#fff}
+.badge.bili{background:#D67BA8}
+.badge.xhs{background:#E0655F}
+.badge.other{background:#9C93A3}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;padding:8px 14px;border-radius:12px;
+  background:#F3ECF1;color:var(--ink);font-size:13px;font-weight:600;cursor:pointer;border:none;font-family:inherit}
+.btn.pri{background:var(--pink);color:#fff}
+.btn.ghost{background:var(--paper);border:1px solid var(--line2);color:var(--ink2)}
+.btn.danger{background:#FDECEC;color:#C0392B}
+.btn.wide{width:100%}
+.btn:active{opacity:.75}
+.btn.sm{padding:5px 10px;font-size:12px;border-radius:10px}
+input[type=text],input[type=number],input[type=password],textarea,select{
+  width:100%;padding:9px 11px;border:1px solid var(--line2);border-radius:var(--r2);background:var(--paper2);
+  color:var(--ink);font-size:13.5px;font-family:inherit;outline:none}
+input:focus,textarea:focus{border-color:var(--pink-line);background:#fff}
+textarea{resize:vertical;line-height:1.6}
+label.f{display:block;font-size:12px;color:var(--ink3);margin:9px 0 4px}
+.sw{position:relative;width:44px;height:25px;border-radius:999px;background:#DDD3DB;transition:.18s;cursor:pointer;flex:0 0 auto}
+.sw.on{background:var(--pink)}
+.sw i{position:absolute;top:2.5px;left:2.5px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.18s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.sw.on i{left:21.5px}
+.swrow{display:flex;align-items:center;gap:10px;padding:8px 0}
+.swrow .lb{flex:1;font-size:13.5px}
+input[type=range]{width:100%;-webkit-appearance:none;height:4px;border-radius:2px;background:var(--line2);outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;
+  background:var(--pink);box-shadow:0 2px 6px rgba(214,51,108,.35)}
+.empty{text-align:center;padding:44px 20px;color:var(--ink3)}
+.empty .big{font-size:34px;opacity:.5}
+.empty p{margin:8px 0 0;font-size:13px}
+
+/* ---------- 搜索 ---------- */
+.search{position:relative;margin-bottom:9px}
+.search input{padding-left:34px;background:#fff}
+.search .mag{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--ink3);font-size:14px}
+.search .clr{position:absolute;right:9px;top:50%;transform:translateY(-50%);color:var(--ink3);font-size:14px;
+  padding:3px 6px;cursor:pointer;display:none}
+.search.has .clr{display:block}
+
+/* ---------- 时间轴 ---------- */
+.dateh{display:flex;align-items:center;gap:9px;margin:18px 0 10px}
+.dateh .d{font-size:13.5px;font-weight:700;color:var(--pink2);letter-spacing:.4px}
+.dateh .l{flex:1;height:1px;background:linear-gradient(90deg,var(--pink-line),transparent)}
+.tl{position:relative;padding-left:16px}
+.tl:before{content:'';position:absolute;left:3px;top:6px;bottom:6px;width:1.5px;background:var(--line2);border-radius:2px}
+.tl-item{position:relative;margin-bottom:11px}
+.tl-item:before{content:'';position:absolute;left:-16.5px;top:19px;width:8px;height:8px;border-radius:50%;
+  background:#fff;border:2px solid var(--pink);box-shadow:0 0 0 3px rgba(214,51,108,.09)}
+.rec{background:var(--paper);border-radius:var(--r);border:1px solid var(--line);box-shadow:var(--sh);overflow:hidden}
+.rec-h{padding:12px 13px;cursor:pointer}
+.rec-t{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink3)}
+.rec-kw{color:var(--pink2);font-weight:600;font-size:13px}
+.rec-peek{font-size:12.5px;color:var(--ink2);margin-top:7px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.rec-meta{font-size:11px;color:var(--ink3);margin-top:5px}
+.rec-body{padding:0 13px 13px;display:none}
+.rec.open .rec-body{display:block}
+/* 翻页：换内容，不藏第二页 */
+.swipe-wrap{position:relative}
+.swipe-hint{text-align:center;font-size:11px;color:#B99;letter-spacing:1px;margin-top:8px;opacity:.8}
+/* 日记页：横线格纸 */
+.mem .txt.clamped{max-height:84px;overflow:hidden}
+.mem .fold{cursor:pointer;color:var(--pink2);font-size:12px;padding:0 2px;user-select:none;margin-left:2px}
+.diary-sheet{background:#FFFDF9;border:1px solid #EADFD6;border-radius:10px;padding:10px 12px 14px;
+  background-image:repeating-linear-gradient(to bottom,transparent 0,transparent 25px,#F0E4E9 25px,#F0E4E9 26px);
+  background-position:0 8px;min-height:100%}
+.diary-h{font-size:15px;font-weight:700;color:var(--pink2);margin:0 0 3px;line-height:26px}
+.diary-m{font-size:11.5px;color:#9A8B92;margin-bottom:4px;line-height:20px}
+.diary-tags{margin:2px 0 6px}
+.diary-body{font-size:13.5px;line-height:26px;color:#3A3036;white-space:pre-wrap;word-break:break-word;white-space:pre-wrap;word-break:break-word}
+.diary-empty{font-size:13px;color:#8A7A82;padding:16px 4px;line-height:26px}
+.cal-h{display:flex;align-items:center;justify-content:space-between;font-size:13.5px;font-weight:700;color:var(--pink2);margin-bottom:8px}
+.cal-nav{cursor:pointer;padding:0 10px;font-size:17px;color:#C48;user-select:none}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal-w{font-size:10.5px;color:#B9A;text-align:center;padding-bottom:2px}
+.cal-d{font-size:12.5px;text-align:center;line-height:26px;height:26px;border-radius:8px;color:#C4B8BE}
+.cal-d.has{color:#B02A5B;background:#FDEDF3;cursor:pointer}
+.cal-d.today{box-shadow:inset 0 0 0 1px #F3C3D6}
+.cal-d.on{background:#D6336C;color:#fff}
+.cal-d.blank{visibility:hidden}
+.rec.open .rec-peek{display:none}
+.arrow{transition:.18s;color:var(--ink3);font-size:12px}
+.rec.open .arrow{transform:rotate(180deg)}
+.item{padding:11px 0;border-top:1px dashed var(--line)}
+.item:first-child{border-top:none;padding-top:2px}
+.item-t{font-size:13.5px;font-weight:600;line-height:1.5}
+.item-m{font-size:11px;color:var(--ink3);margin-top:3px}
+.item-s{font-size:12.5px;color:var(--ink2);margin-top:6px;line-height:1.65}
+.lnk{display:flex;align-items:center;gap:6px;margin-top:8px;flex-wrap:wrap}
+.lnk .bv{font-family:ui-monospace,Menlo,monospace;font-size:11.5px;color:var(--blue);
+  background:#F2F6FD;padding:3px 8px;border-radius:7px;border:1px solid #DFE8F7}
+.lnk .mini{font-size:11px;padding:3px 9px;border-radius:8px;background:#F4EEF3;color:var(--ink2);cursor:pointer;font-weight:600}
+.lnk .mini:active{background:var(--pink-soft);color:var(--pink2)}
+.cmt{font-size:11.5px;color:var(--ink2);background:var(--paper2);border-left:2px solid var(--pink-line);
+  padding:6px 9px;border-radius:0 8px 8px 0;margin-top:6px;line-height:1.6}
+.note{background:linear-gradient(180deg,#FFF9FB,#FDF4F8);border:1px solid var(--pink-line);
+  border-radius:var(--r2);padding:10px 12px;font-size:13px;line-height:1.7;color:#4A3B46;margin-top:9px}
+.note .who{font-size:11px;color:var(--pink);font-weight:700;margin-bottom:4px;display:block}
+
+/* ---------- 统计图 ---------- */
+.chart{display:flex;justify-content:center;align-items:flex-start;padding:6px 0 2px;min-height:230px;max-height:330px;overflow-y:auto;overflow-x:hidden}
+.chart::-webkit-scrollbar{width:5px}
+.chart::-webkit-scrollbar-thumb{background:#E7C6D6;border-radius:3px}
+.chart::-webkit-scrollbar-track{background:transparent}
+.cols{display:flex;align-items:flex-end;gap:6px;height:210px;width:100%;padding:0 4px 4px;overflow-x:auto;overflow-y:hidden}
+.cols::-webkit-scrollbar{height:5px}
+.cols::-webkit-scrollbar-thumb{background:#E7C6D6;border-radius:3px}
+.cols::-webkit-scrollbar-track{background:transparent}
+.col{flex:0 0 26px;width:26px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%}
+.col-b{width:100%;border-radius:4px 4px 0 0;min-height:5px}
+.col-n{font-size:9px;color:#B9A;margin-bottom:3px}
+.col-b.seg{cursor:pointer;transition:opacity .15s}
+.col-b.seg.dim{opacity:.3}
+.col-b.seg.on{box-shadow:0 0 0 2px #fff,0 0 0 3px #D6336C}
+.chart-col{align-items:flex-start;max-height:none;overflow:visible;display:block}
+.legend{max-height:300px;overflow-y:auto}
+.legend::-webkit-scrollbar{width:5px}
+.legend::-webkit-scrollbar-thumb{background:#E7C6D6;border-radius:3px}
+#notelist{max-height:560px;overflow-y:auto}
+#notelist::-webkit-scrollbar{width:5px}
+.scrolly{max-height:360px;overflow-y:auto;overflow-x:hidden;padding-right:4px}
+.scrolly::-webkit-scrollbar{width:5px}
+.scrolly::-webkit-scrollbar-thumb{background:#E7C6D6;border-radius:3px}
+.scrolly::-webkit-scrollbar-track{background:transparent}
+#notelist::-webkit-scrollbar-thumb{background:#E7C6D6;border-radius:3px}
+.chart svg{max-width:100%;height:auto}
+.legend{margin-top:10px}
+.lg{display:flex;align-items:center;gap:9px;padding:6px 2px;font-size:13px}
+.lg .dot{width:10px;height:10px;border-radius:3px;flex:0 0 auto}
+.lg .nm{flex:1}
+.lg .ct{font-size:12px;color:var(--ink3)}
+.lg .own{font-size:10.5px;color:var(--pink);background:var(--pink-soft);padding:1px 7px;border-radius:999px}
+.bar-wrap{padding:4px 0}
+.bar-row{margin-bottom:9px}
+.bar-top{display:flex;font-size:12.5px;margin-bottom:4px}
+.bar-track{height:9px;border-radius:5px;background:#F2EBF0;overflow:hidden}
+.bar-fill{height:100%;border-radius:5px;transition:width .5s}
+.chart svg .seg{cursor:pointer;touch-action:manipulation;transition:opacity .18s ease,filter .18s ease}
+.chart svg .seg.dim{opacity:.28}
+.chart svg .seg.on{filter:drop-shadow(0 0 6px rgba(214,51,108,.5))}
+.chart svg .seg:active{opacity:.7}
+.chart svg .pct{pointer-events:none;font-weight:700}
+.bar-wrap .bar-row{cursor:pointer;padding:3px 6px;border-radius:10px;transition:background .15s,opacity .18s}
+.bar-wrap .bar-row.dim{opacity:.32}
+.bar-wrap .bar-row.on{background:var(--pink-soft)}
+.bar-wrap .bv2{font-size:11.5px;color:var(--ink3)}
+.bar-wrap .bv2 b{color:var(--pink2)}
+.chart-tip{display:none;margin:5px auto 0;text-align:center;font-size:12.5px;color:var(--ink2);
+  background:var(--pink-soft);border:1px solid var(--pink-line);border-radius:999px;padding:5px 14px;width:fit-content}
+.chart-tip b{color:var(--pink2)}
+.chart-hint{text-align:center;font-size:10.5px;color:var(--ink3);margin-top:6px}
+.legend .lg{transition:background .15s}
+.legend .lg.on{background:var(--pink-soft);border-radius:9px;padding-left:7px;padding-right:7px}
+
+/* ---------- 记忆 ---------- */
+.mem{border:1px solid var(--line);border-radius:var(--r2);padding:11px;margin-bottom:9px;background:var(--paper2)}
+.mem .mh{display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--ink3)}
+.mem .kw{color:var(--pink2);font-weight:600;font-size:12.5px}
+.mem .txt{font-size:12.5px;color:var(--ink2);margin-top:6px;line-height:1.65}
+.mem .txt.blur{font-style:italic;color:var(--ink3)}
+.mem .mt{display:flex;align-items:center;gap:7px;margin-top:8px;font-size:10.5px;color:var(--ink3)}
+.imp{flex:1;height:5px;border-radius:3px;background:#EDE5EB;overflow:hidden}
+.imp i{display:block;height:100%;background:linear-gradient(90deg,#F6A6C4,#D6336C)}
+.state{padding:1px 7px;border-radius:999px;font-size:10px}
+.state.fresh{background:#E8F6EE;color:#2E8B57}
+.state.compressed{background:#FFF3E0;color:#B26A00}
+.state.danger{background:#FDECEC;color:#C0392B}
+
+/* ---------- 存档 ---------- */
+.pf{border:1px solid var(--line);border-radius:var(--r2);padding:12px;margin-bottom:9px;background:var(--paper)}
+.pf.on{border-color:var(--pink-line);background:linear-gradient(180deg,#FFF9FB,#fff)}
+.pf .n{font-size:14px;font-weight:700;display:flex;align-items:center;gap:7px}
+.pf .n .cur{font-size:10.5px;background:var(--pink);color:#fff;padding:1px 8px;border-radius:999px}
+.pf .p{font-size:11.5px;color:var(--ink3);margin-top:5px;word-break:break-all;line-height:1.6}
+.editbox{margin-top:8px;padding-top:6px;border-top:1px dashed var(--line)}
+.editbox .row .btn{flex:0 0 auto}
+
+/* ---------- 提示 ---------- */
+#toast{position:fixed;left:50%;bottom:34px;transform:translateX(-50%) translateY(20px);
+  background:rgba(43,36,48,.94);color:#fff;padding:9px 17px;border-radius:999px;font-size:13px;
+  opacity:0;pointer-events:none;transition:.25s;z-index:99;max-width:86%;text-align:center}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.mask{position:fixed;inset:0;background:rgba(43,36,48,.42);display:flex;align-items:center;justify-content:center;
+  padding:24px;z-index:100}
+.modal{background:#fff;border-radius:18px;padding:18px;width:100%;max-width:380px;box-shadow:0 18px 50px rgba(0,0,0,.22)}
+.modal h3{margin:0 0 8px;font-size:16px}
+.modal p{margin:0 0 14px;font-size:13px;color:var(--ink2);line-height:1.7}
+.modal .acts{display:flex;gap:9px}
+.modal .acts .btn{flex:1}
+.dangerbox{background:#FDECEC;border:1px solid #F5C6C6;border-radius:12px;padding:10px 12px;margin-bottom:12px}
+.dangerbox .t{color:#C0392B;font-weight:700;font-size:12.5px}
+.dangerbox .d{color:#A94442;font-size:11.5px;margin-top:4px;line-height:1.6}
+.loading{text-align:center;padding:80px 20px;color:var(--ink3);font-size:13.5px}
+
+/* ---------- 手记卡片：可折叠 ---------- */
+.rec{transition:box-shadow .2s,border-color .2s}
+.rec.open{border-color:var(--pink-line);box-shadow:0 2px 6px rgba(90,60,80,.07),0 10px 26px rgba(214,51,108,.10)}
+.rec-h:active{background:#FDF7FA}
+.rec-sub{font-size:12px;color:var(--ink3);margin-top:6px;line-height:1.6;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.rec-body{animation:recin .18s ease}
+@keyframes recin{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+
+/* ---------- 文件列表 ---------- */
+.filelist{margin-top:9px;border:1px solid var(--line);border-radius:var(--r2);overflow:hidden}
+.frow{display:flex;align-items:center;gap:9px;padding:9px 11px;border-top:1px solid var(--line);background:var(--paper2)}
+.frow:first-child{border-top:none}
+.frow .fn{flex:1;min-width:0;font-size:12.5px;font-weight:600;word-break:break-all}
+.frow .fs{font-size:10.5px;color:var(--ink3);white-space:nowrap}
+
+/* ---------- 可左滑的文件行 ---------- */
+.swipe{position:relative;overflow:hidden;border-top:1px solid var(--line);background:var(--paper2)}
+.swipe:first-child{border-top:none}
+.swipe .slider{position:relative;z-index:1;display:flex;flex-direction:column;align-items:stretch;gap:4px;
+  padding:9px 11px;background:var(--paper2);transition:transform .22s ease;touch-action:pan-y}
+.swipe .slider .fn{font-size:12.5px;font-weight:600;word-break:break-all}
+.swipe .slider .fs{font-size:10.5px;color:var(--ink3)}
+.tagx{font-size:10.5px;padding:1px 7px;border-radius:999px;font-weight:600;white-space:nowrap}
+.tagx.cur{background:var(--pink);color:#fff}
+.tagx.bound{background:#F1EDF5;color:#6B5A78}
+.tagx.reg{background:#FDECEC;color:#C0392B}
+.swipe .acts{position:absolute;top:0;right:0;height:100%;display:flex;z-index:0}
+.swipe .acts .a{width:62px;height:100%;display:flex;align-items:center;justify-content:center;
+  font-size:12px;font-weight:700;color:#fff;letter-spacing:.5px}
+.swipe .acts .a.ren{background:#4C7DC4}
+.swipe .acts .a.del{background:#C0392B}
+.swipe .acts .a:active{filter:brightness(.9)}
+.swipe-hintline{font-size:10.5px;color:var(--ink3);margin-top:7px;line-height:1.6}
+.stale{margin:8px 0 0;padding:9px 11px;border-radius:12px;background:#FFF4E5;color:#8A5A00;
+  font-size:11.5px;line-height:1.65;border:1px solid #F2DDB6}
+.bridge-line{margin:7px 0 0;font-size:10px;color:var(--ink3);letter-spacing:.2px;opacity:.75}
+</style>
+</head>
+<body>
+<div id="app"><div class="loading">正在翻开手记…</div></div>
+<div id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============ 状态 ============ */
+var S = {
+  data:null, registry:null, profile:null, dataFile:"", backups:[], cards:[],
+  tab:"notes",
+  q:"", range:"all", sort:"time_desc", openRec:{}, openPlat:{},
+  chart:"ring", chartRange:"all", chartPick:-1,
+  newTag:"", blockDraft:"",
+  vaultEdit:null, pendingDelete:null,
+  baseDir:"", pickOpen:false, pickFiles:null, pickErr:"",
+  bridgeVer:"", bridgeShape:""
+};
+
+/* 页面自己的版本。桥的版本对不上，就说明这份页面是旧的（缓存没换），
+   得明说——不然修了也白修，您看到的还是老那份。 */
+var PAGE_VER = '0.4.42';
+/* 日记写法默认规则（可被设置页改写） */
+var DEFAULT_DIARY_RULE='要有你自己的思考、判断、感想，但让事实垫底——写清看了什么，再说你怎么看。可以是日记、手记、随笔，形式随意、长短随意。唯一要避的是：结尾来一句别人看不懂的升华或中二感慨。实在没什么可说，就别填这一项。';
+
+var PALETTE = ['#D6336C','#E07B39','#E0B33C','#3FA76A','#2E9CA8','#4C7DC4','#8B5FC0','#C2557E','#7A8B99'];
+var PERMS = [
+  {k:'like',label:'点赞'},{k:'dislike',label:'点踩'},
+  {k:'comment',label:'评论'},{k:'delete_comment',label:'删自己的评'},
+  {k:'favorite',label:'收藏'},{k:'unfavorite',label:'取消收藏'},
+  {k:'dm_reply',label:'私信回复'},{k:'public_reply',label:'公共回复'},
+  {k:'follow',label:'关注'},{k:'unfollow',label:'取关'},
+  {k:'publish',label:'发帖 / 投稿'}
+];
+var BLOCKS = [
+  {k:'records',label:'手记记录'},{k:'memory',label:'闲逛记忆'},
+  {k:'persons',label:'人物卡'},{k:'actions',label:'动作流水'},
+  {k:'preferences',label:'偏好标签'},{k:'schedule',label:'定时设置'},
+  {k:'platforms',label:'平台与账号'},{k:'wfprompts',label:'工作流指令'}
+];
+
+/* ============ 工具 ============ */
+function $(id){ return document.getElementById(id); }
+/* NodeList.forEach 在某些老 WebView 上没实现——一旦抛错，
+   后面的绑定全断，表现就是「输入框怎么改都存不上」。所以自己走循环。 */
+function eachEl(sel, fn){
+  var list;
+  try{ list=document.querySelectorAll(sel); }catch(e){ return; }
+  if(!list||!list.length) return;
+  for(var i=0;i<list.length;i++) fn(list[i],i);
+}
+function hasFn(name){
+  return (typeof XgHost!=='undefined') && XgHost && (typeof XgHost[name]==='function');
+}
+/* 版本比对：桥是 0.4.3 起才认「单参 JSON」，老桥只认逗号串 */
+function verAtLeast(v, want){
+  if(!v) return false;
+  var a=String(v).split('.'), b=String(want).split('.');
+  for(var i=0;i<3;i++){
+    var x=Number(a[i]||0), y=Number(b[i]||0);
+    if(x>y) return true;
+    if(x<y) return false;
+  }
+  return true;
+}
+/* 导出参数：新桥给 JSON（带 tag），老桥只给逗号串——两种桥都吃得下 */
+function bkArg(blocks, tag){
+  if(verAtLeast(S.bridgeVer,'0.4.3')) return JSON.stringify({blocks:blocks||null,tag:tag||'manual'});
+  return blocks&&blocks.length?blocks.join(','):'';
+}
+var _missed={};
+function esc(s){
+  return String(s==null?"":s).replace(/[&<>"']/g,function(c){
+    return {'&':'\x26amp;','<':'\x26lt;','>':'\x26gt;','"':'\x26quot;',"'":'\x26#39;'}[c];
+  });
+}
+function splitComments(cs){
+  if(cs==null) return [];
+  if(typeof cs==='string'){
+    return cs.split(/[／|｜]/).map(function(s){return String(s).trim();}).filter(function(s){return !!s;});
+  }
+  return cs;
+}
+function escLegacy(s){
+  return String(s==null?"":s).replace(/[&<>"']/g,function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'"',"'":'&#39;'}[c];
+  });
+}
+function pad2(n){ n=Number(n)||0; return (n<10?'0':'')+n; }
+function fmtDay(ts){ var d=new Date(ts); return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
+function fmtHM(ts){ var d=new Date(ts); return pad2(d.getHours())+':'+pad2(d.getMinutes()); }
+function fmtStamp(ts){
+  if(!ts) return '—';
+  var d=new Date(ts);
+  return pad2(d.getMonth()+1)+'-'+pad2(d.getDate())+' '+pad2(d.getHours())+':'+pad2(d.getMinutes());
+}
+function fmtSize(b){
+  b=Number(b)||0;
+  if(b<1024) return b+' B';
+  if(b<1048576) return (b/1024).toFixed(1)+' KB';
+  return (b/1048576).toFixed(2)+' MB';
+}
+function daysAgoStr(n){
+  var d=new Date(); d.setDate(d.getDate()-n);
+  return fmtDay(d.getTime());
+}
+
+function toast(msg){
+  var t=$('toast');
+  t.textContent=msg;
+  t.classList.add('on');
+  clearTimeout(t._tm);
+  t._tm=setTimeout(function(){ t.classList.remove('on'); },1900);
+}
+
+function call(name, args){
+  try{
+    if(!hasFn(name)){
+      if(!_missed[name]){ _missed[name]=1; toast('桥里没有「'+name+'」——插件没重装？'); }
+      return null;
+    }
+    var r;
+    var a=args||[];
+    /* 单参直接调——Operit 的 WebView 桥对 apply 传参不总是稳，直接调最踏实；
+       多参才退回 apply（老写法，留着兼容）。 */
+    if(a.length===0) r=XgHost[name]();
+    else if(a.length===1) r=XgHost[name](a[0]);
+    else r=XgHost[name].apply(XgHost, a);
+    if(typeof r==='string'){
+      try{ return JSON.parse(r); }catch(e){ return r; }
+    }
+    return r;
+  }catch(e){
+    toast('桥调用失败：'+(e&&e.message||e));
+    return null;
+  }
+}
+
+/* ============ 读写 ============ */
+function loadAll(){
+  var r=call('load');
+  if(!r||!r.success){ toast('读不到账本'+(r&&r.error?('：'+r.error):'')); return false; }
+  S.registry=r.registry;
+  S.profile=r.profile;
+  S.dataFile=r.dataFile;
+  S.data=r.data;
+  S.backups=r.backups||[];
+  S.cards=r.cards||[];
+  S.baseDir=r.baseDir||S.baseDir||'';
+  // 注册表自己不是手记——见到就拔，别让它躺在存档列表里冒充角色卡绑定
+  if(sanitizeRegistry()){
+    try{ call('saveRegistry',[JSON.stringify(S.registry)]); }catch(e){}
+  }
+  if(!S.data.memory) S.data.memory={mode:'forget',retention_days:7,blur:.3,compress:true,
+    compress_threshold:.45,forget_threshold:.15,memories:[],stats:{}};
+  if(!S.data.memory.memories) S.data.memory.memories=[];
+  return true;
+}
+function save(){
+  if(!S.data) return;
+  var r=call('save',[JSON.stringify(S.data)]);
+  if(r && r.success===false) toast('存不上：'+(r.error||''));
+}
+
+/* ============ 手记：筛选 ============ */
+function tagCounts(){ return (S.data&&S.data.stats&&S.data.stats.tagCounts)||{}; }
+
+function allRecords(){
+  var recs=(S.data&&S.data.records)||[];
+  return recs.slice().sort(function(a,b){ return (b.ts||0)-(a.ts||0); });
+}
+
+function inRange(r){
+  if(S.range==='all') return true;
+  var days = S.range==='3'?3:(S.range==='7'?7:30);
+  var cut = new Date(); cut.setDate(cut.getDate()-(days-1)); cut.setHours(0,0,0,0);
+  return (r.ts||0) >= cut.getTime();
+}
+
+function matchQ(r){
+  if(!S.q) return true;
+  var q=S.q.toLowerCase();
+  var hay=[r.keyword||'',r.platform||'',r.note||'',(r.tags||[]).join(' ')];
+  var items=r.items||[];
+  for(var i=0;i<items.length;i++){
+    var it=items[i]||{};
+    hay.push(it.title||'',it.author||'',it.summary||'');
+    var cs=splitComments(it.comments);
+    for(var c=0;c<cs.length;c++) hay.push(cs[c]);
+  }
+  return hay.join(' ').toLowerCase().indexOf(q)>=0;
+}
+
+function visibleRecords(){
+  var recs=allRecords().filter(function(r){ return inRange(r)&&matchQ(r)&&(!S.dateFilter||r.date===S.dateFilter); });
+  if(S.sort==='time_asc') recs.reverse();
+  else if(S.sort==='tag'){
+    // 同标签的聚到顶部：按「本条标签在全部记录里的总热度」排
+    var tc=tagCounts();
+    function heat(r){
+      var t=r.tags||[], m=0;
+      for(var i=0;i<t.length;i++) m=Math.max(m,Number(tc[t[i]])||0);
+      return m;
+    }
+    recs.sort(function(a,b){
+      var ha=heat(a),hb=heat(b);
+      if(ha!==hb) return hb-ha;
+      return (b.ts||0)-(a.ts||0);
+    });
+  }
+  return recs;
+}
+
+/* ============ 平台徽章 ============ */
+function platClass(name){
+  var n=String(name||'');
+  if(n.indexOf('B')>=0||n.toLowerCase().indexOf('bili')>=0) return 'bili';
+  if(n.indexOf('小红书')>=0||n.toLowerCase().indexOf('xhs')>=0) return 'xhs';
+  return 'other';
+}
+function platBadge(name){
+  return '<span class="badge '+platClass(name)+'">'+esc(name||'未知')+'</span>';
+}
+function tagChip(t,mine){
+  return '<span class="tag'+(mine?' mine':'')+'">#'+esc(t)+'</span>';
+}
+
+/* ============ 链接 ============ */
+function bvOf(url){
+  var m=String(url||'').match(/(BV[0-9A-Za-z]+)/);
+  if(m) return m[1];
+  var m2=String(url||'').match(/explore\/([0-9a-f]{16,})/i);
+  if(m2) return m2[1].slice(0,14)+'…';
+  try{ var u=new URL(url); return u.hostname; }catch(e){ return String(url||'').slice(0,18); }
+}
+function linkRow(url){
+  if(!url) return '';
+  var bv=bvOf(url);
+  return '<div class="lnk">'
+    +'<span class="bv">'+esc(bv)+'</span>'
+    +'<span class="mini" data-act="open" data-url="'+esc(url)+'">打开</span>'
+    +'<span class="mini" data-act="copy" data-txt="'+esc(url)+'">复制链接</span>'
+    +'<span class="mini" data-act="copy" data-txt="'+esc(bv)+'">复制'+esc(/^BV/.test(bv)?'BV号':'号')+'</span>'
+    +'</div>';
+}
+
+/* ============ 手记页 ============ */
+function recCard(r){
+  var open=!!S.openRec[r.id];
+  var items=r.items||[];
+  var peek='',peekSub='';
+  if(items.length){
+    var it0=items[0]||{};
+    peek=esc(it0.title||'');
+    if(it0.summary) peekSub=esc(it0.summary);
+  }
+  var meta='';
+  if(items.length&&items[0]&&items[0].stats) meta=esc(items[0].stats);
+  if(items.length>1) meta+=(meta?' · ':'')+'还有 '+(items.length-1)+' 条';
+  var tags=(r.tags||[]).map(function(t){ return tagChip(t); }).join('');
+  var h='<div class="tl-item"><div class="rec'+(open?' open':'')+'">';
+  h+='<div class="swipe-wrap" data-swipe="'+esc(r.id)+'">';
+  h+='<div class="rec-h" data-act="toggle-rec" data-k="'+esc(r.id)+'">';
+  h+='<div class="rec-t">'+esc(r.time||'')+' '+platBadge(r.platform)
+     +'<span class="sp"></span><span class="arrow">▾</span></div>';
+  h+='<div style="margin-top:5px"><span class="rec-kw">「'+esc(r.keyword||'随手逛')+'」</span></div>';
+  if(peek) h+='<div class="rec-peek">'+peek+'</div>';
+  if(peekSub) h+='<div class="rec-sub">'+peekSub+'</div>';
+  if(meta) h+='<div class="rec-meta">'+meta+'</div>';
+  if(tags) h+='<div style="margin-top:6px">'+tags+'</div>';
+  h+='</div>';
+  h+='<div class="rec-body">';
+  for(var i=0;i<items.length;i++){
+    var it=items[i]||{};
+    h+='<div class="item">';
+    h+='<div class="item-t">'+(i+1)+'. '+esc(it.title||'（无题）')+'</div>';
+    var m=[];
+    if(it.author) m.push('作者 '+esc(it.author));
+    if(it.stats) m.push(esc(it.stats));
+    if(m.length) h+='<div class="item-m">'+m.join(' · ')+'</div>';
+    h+=linkRow(it.url);
+    if(it.summary) h+='<div class="item-s">'+esc(it.summary)+'</div>';
+    var cs=splitComments(it.comments);
+    for(var c=0;c<cs.length;c++) h+='<div class="cmt">「'+esc(cs[c])+'」</div>';
+    h+='</div>';
+  }
+  if(tags) h+='<div style="margin-top:10px">'+tags+'</div>';
+  h+='</div>';
+  h+='</div>';
+  h+='<div class="swipe-hint" data-act="flip" data-k="'+esc(r.id)+'">← 左滑看日记 · 右滑回手记 →</div>';
+  h+='</div></div>';
+  return h;
+}
+/* 日记页内容（翻页时直接换进来） */
+function diaryHTML(r){
+  var dg=r&&r.diary;
+  if(!dg) return '<div class="diary-sheet"><div class="diary-empty">这趟没写日记。<br/>没什么可说就不说——空着也是真的。</div></div>';
+  return '<div class="diary-sheet">'
+    +'<div class="diary-h">'+esc(dg.title||'（无题）')+'</div>'
+    +'<div class="diary-m">'+esc(r.date||'')+' '+esc(r.time||'')+platBadge(r.platform)+'</div>'
+    +'<div class="diary-tags">'+((dg.tags&&dg.tags.length?dg.tags:(r.tags||[]))).map(function(t){return tagChip(t);}).join('')+'</div>'
+    +'<div class="diary-body">'+esc(dg.content||'')+'</div>'
+    +'</div>';
+}
+function findRec(id){
+  var all=allRecords();
+  for(var i=0;i<all.length;i++){ if(all[i].id===id) return all[i]; }
+  return null;
+}
+/* 翻页 = 换内容，不藏第二页 */
+function flipCard(w,on){
+  try{
+    if(!w._noteHTML) w._noteHTML=w.innerHTML;
+    if(on){ w.innerHTML=diaryHTML(findRec(w.getAttribute('data-swipe'))); }
+    else { w.innerHTML=w._noteHTML; }
+    w.classList.toggle('on-diary',!!on);
+  }catch(e){}
+}
+
+function calendarHTML(){
+  var now=new Date();
+  var y=S.calY||now.getFullYear();
+  var mo=(S.calM===undefined||S.calM===null)?now.getMonth():S.calM;
+  var startDay=new Date(y,mo,1).getDay();
+  var days=new Date(y,mo+1,0).getDate();
+  var has={};
+  var all=allRecords();
+  for(var i=0;i<all.length;i++){ if(all[i].date) has[all[i].date]=1; }
+  var h='<div class="cal-h"><span class="cal-nav" data-act="cal-prev">‹</span>'
+   +'<b>'+y+' 年 '+(mo+1)+' 月</b><span class="cal-nav" data-act="cal-next">›</span></div>';
+  h+='<div class="cal-grid">';
+  var wd=['日','一','二','三','四','五','六'];
+  for(var w=0;w<7;w++) h+='<span class="cal-w">'+wd[w]+'</span>';
+  for(var b=0;b<startDay;b++) h+='<span class="cal-d blank"></span>';
+  var today=fmtDay(Date.now());
+  for(var d=1;d<=days;d++){
+    var ds=y+'-'+pad2(mo+1)+'-'+pad2(d);
+    var cls='cal-d'+(has[ds]?' has':'')+(ds===today?' today':'')+(S.dateFilter===ds?' on':'');
+    h+='<span class="'+cls+'"'+(has[ds]?(' data-act="cal-pick" data-v="'+ds+'"'):'')+'>'+d+'</span>';
+  }
+  h+='</div>';
+  if(S.dateFilter) h+='<div class="muted" style="margin-top:7px">只看 '+esc(S.dateFilter)+' 的手记 ·<span data-act="cal-clear" style="color:var(--pink2);cursor:pointer"> 取消</span></div>';
+  return h;
+}
+
+function notesMain(){
+  var recs=visibleRecords();
+  var all=allRecords();
+  var today=fmtDay(Date.now());
+  var todayN=0,lastTs=0;
+  for(var i=0;i<all.length;i++){
+    if(all[i].date===today) todayN++;
+    if((all[i].ts||0)>lastTs) lastTs=all[i].ts||0;
+  }
+  var sch=S.data.schedule||{};
+  var mem=S.data.memory||{};
+  var h='';
+
+  // 概览
+  h+='<div class="card tight">';
+  h+='<div class="row sb"><div style="font-size:13.5px;font-weight:700">今天 '+todayN+' 笔 · 共 '+all.length+' 笔</div>'
+    +'<div class="muted">上次 '+fmtStamp(lastTs)+'</div></div>';
+  h+='<div class="muted" style="margin-top:4px">下一次醒来：'
+    +(sch.enabled?('每 '+sch.interval_hours+' 小时，'+sch.active_start+'–'+sch.active_end+' 点之间'):'定时已关，只能手动')
+    +' · 记忆库 '+((mem.memories||[]).length)+' 条</div>';
+  h+='<div class="card tight" id="calbox">'+calendarHTML()+'</div>';
+  h+='<div style="margin-top:10px"><button class="btn pri wide" data-act="urge">'
+    +(S.data.manual_request?'已经排上队了 ✓':'催我出门逛一趟')+'</button></div>';
+  h+='</div>';
+
+  // 工具条
+  h+='<div class="search'+(S.q?' has':'')+'" id="searchbox">'
+    +'<span class="mag">🔍</span>'
+    +'<input type="text" id="q" placeholder="搜 AI 逛过什么——标题、梗概、标签、评论都能搜" value="'+esc(S.q)+'" />'
+    +'<span class="clr" data-act="clear-q">✕</span></div>';
+
+  h+='<div class="chips" id="notebar" style="margin-bottom:7px">'+chipsHTML()+'</div>';
+
+  h+='<div class="muted" id="filterhint" style="margin-bottom:4px">'+filterHint()+'</div>';
+
+  // 列表
+  h+='<div id="notelist">'+notesList()+'</div>';
+  return h;
+}
+
+function chipsHTML(){
+  var h='';
+  [['all','全部'],['3','近 3 天'],['7','近 7 天'],['30','近 30 天']].forEach(function(p){
+    h+='<span class="chip'+(S.range===p[0]?' on':'')+'" data-act="range" data-v="'+p[0]+'">'+p[1]+'</span>';
+  });
+  h+='<span style="width:8px;flex:0 0 auto"></span>';
+  [['time_desc','新→旧'],['time_asc','旧→新'],['tag','按标签聚']].forEach(function(p){
+    h+='<span class="chip'+(S.sort===p[0]?' on':'')+'" data-act="sort" data-v="'+p[0]+'">'+p[1]+'</span>';
+  });
+  return h;
+}
+
+function notesList(){
+  var all=visibleRecords();
+  var recs = S.showAll ? all : all.slice(0, S.limitN||3);
+  var h='';
+  if(!recs.length){
+    h+='<div class="empty"><div class="big">🗒</div><p>'
+      +(all.length? '这个条件下没翻到东西，换个词试试' : '还没出门逛过，下一次唤醒后会自动出门')
+      +'</p></div>';
+    return h;
+  }
+  var lastDate='';
+  for(var j=0;j<recs.length;j++){
+    var r=recs[j];
+    if(r.date!==lastDate){
+      if(lastDate) h+='</div>';
+      h+='<div class="dateh"><span class="d">'+esc(r.date||'')+'</span><span class="l"></span></div><div class="tl">';
+      lastDate=r.date;
+    }
+    h+=recCard(r);
+  }
+  h+='</div>';
+  if(!S.showAll && all.length>recs.length){
+    h+='<div style="margin-top:12px"><button class="btn ghost wide" data-act="show-all">还有 '+(all.length-recs.length)+' 条 · 看全部</button></div>';
+  } else if(S.showAll && all.length>3){
+    h+='<div style="margin-top:12px"><button class="btn ghost wide" data-act="show-less">收起，只看最近 3 条</button></div>';
+  }
+  return h;
+}
+function filterHint(){
+  var n=visibleRecords().length;
+  return (S.q?('搜「'+esc(S.q)+'」，'):'')
+    +'筛出 '+n+' 笔'+(S.range!=='all'?('（近 '+S.range+' 天）'):'')
+    +(S.sort==='tag'?'，同标签的排在上面':'');
+}
+
+/* ============ 设置页 ============ */
+function swRow(label,checked,act,key){
+  return '<div class="swrow"><span class="lb">'+esc(label)+'</span>'
+    +'<span class="sw'+(checked?' on':'')+'" data-act="'+act+'" data-k="'+esc(key||'')+'"><i></i></span></div>';
+}
+
+/* ============ 工作流页（改提示词） ============ */
+function wfMain(){
+  var h='';
+  h+='<div class="card">';
+  h+='<div class="sec-h" style="margin:0 0 6px"><span class="bar"></span>工作流提示词</div>';
+  h+='<div class="hint" style="margin-top:0">这里改的是「闲逛手记」工作流里的指令段，AI 出门前按它执行。改完点「保存这段」，下一趟生效。</div>';
+  h+='<div style="margin:10px 0"><button class="btn sm pri" data-act="wf-reload">重新读取</button><span class="muted" style="margin-left:10px">刚进来先点它一下</span></div>';
+  var ps=S.wfPrompts;
+  if(!ps||!ps.length){
+    h+='<div class="muted" style="margin-top:8px">还没读到。</div>';
+  }else{
+    for(var i=0;i<ps.length;i++){
+      var p=ps[i];
+      var draft=(S.wfDraft&&S.wfDraft[p.id]!==undefined)?S.wfDraft[p.id]:p.message;
+      h+='<div style="margin:12px 0 4px;font-weight:600">'+esc(p.name)+' <span class="muted" style="font-weight:400">'+esc(p.id)+'</span></div>';
+      h+='<textarea rows="10" data-wf="'+esc(p.id)+'" style="font:12px/1.6 ui-monospace,monospace">'+esc(draft)+'</textarea>';
+      h+='<div style="margin-top:7px"><button class="btn sm pri" data-act="wf-save" data-v="'+esc(p.id)+'">保存这段</button></div>';
+    }
+  }
+  var prefs=(S.data&&S.data.preferences)||{};
+  var cap=(prefs.speech_cap===undefined?3:prefs.speech_cap);
+  var bias=(prefs.dive_bias===undefined?50:prefs.dive_bias);
+  h+='<div class="sec-h" style="margin:20px 0 6px"><span class="bar"></span>潜水设置</div>';
+  h+='<div class="hint" style="margin-top:0">两项只限定发言范围，具体说不说话由 AI 自行判断。</div>';
+  h+='<div style="margin:12px 0 4px;font-weight:600">每天发言上限</div>';
+  h+='<input type="number" min="0" max="50" data-sp="cap" value="'+esc(String(cap))+'">';
+  h+='<div class="hint" style="margin-top:4px">今天最多开口几次。调到 <b>0</b> = 这趟只读不回。</div>';
+  h+='<div style="margin:16px 0 4px;font-weight:600">潜水倾向 <span class="muted" id="spBiasV">'+esc(String(bias))+'%</span></div>';
+  h+='<input type="range" min="0" max="100" step="5" data-sp="bias" value="'+esc(String(bias))+'">';
+  h+='<div class="hint" style="margin-top:6px"><b>0%</b> 见人就搭话 · <b>50%</b> 一半一半 · <b>100%</b> 只看不说。这是每次出门的默认倾向，不是硬性规则。</div>';
+  h+='<div style="margin-top:14px"><button class="btn sm pri" data-act="sp-save">保存设置</button></div>';
+  h+='<div class="row" style="margin-top:18px;gap:8px">';
+  h+='<button class="btn ghost" data-act="wf-run">现在跑一趟</button>';
+  h+='</div>';
+  h+='<div class="hint">「现在跑一趟」= 手动触发整个闲逛工作流（走时间窗+防抖，跟定时一样）。</div>';
+  h+='</div>';
+  h+='</div>';
+  return h;
+}
+
+function settingsMain(){
+  var prefs=S.data.preferences||{};
+  var s=S.data.schedule||{};
+  var h='';
+
+  // 定时
+  h+='<div class="card">';
+  h+='<div class="row"><span class="sec-h" style="margin:0"><span class="bar"></span>定时</span></div>';
+  h+=swRow('定时唤醒（自己出门逛）',s.enabled,'t-sched','enabled');
+  h+='<div class="row" style="gap:10px">';
+  h+='<div style="flex:1"><label class="f">每几小时一趟</label><input type="number" data-num="interval_hours" value="'+(s.interval_hours||6)+'" /></div>';
+  h+='<div style="flex:1"><label class="f">每趟最多看几条</label><input type="number" data-num="max_items_per_trip" value="'+(s.max_items_per_trip||2)+'" /></div>';
+  h+='</div>';
+  h+='<div class="row" style="gap:10px">';
+  h+='<div style="flex:1"><label class="f">白天起始（点）</label><input type="number" data-num="active_start" value="'+(s.active_start||9)+'" /></div>';
+  h+='<div style="flex:1"><label class="f">夜里收工（点）</label><input type="number" data-num="active_end" value="'+(s.active_end||23)+'" /></div>';
+  h+='</div>';
+  h+='<div class="row"><label class="f">投放到哪个对话（按标题找）</label><input type="text" data-txt="chat_title" value="' + esc(s.chat_title || '' ) + '" placeholder="例如：AI 和用户的日常" /></div>';
+  h+='<div class="hint" style="margin-top:-2px">填对话标题，工作流就投到那个窗口。填错或找不到，这趟就直接断，不会换窗口——定时跑的时候没有「当前窗口」这回事。</div>';
+  h+='<div style="margin-top:12px"><button class="btn pri wide" data-act="sched-ok">确定</button></div>';
+  h+='<div class="hint">改完数字得按「确定」才落盘，工作流那边的间隔一起改；没按确定之前动数字不会惊动它。</div>';
+  h+='</div>';
+
+  // 平台
+  h+='<div class="sec-h"><span class="bar"></span>平台与权限<span class="sp"></span>'
+    +'<button class="btn sm ghost" data-act="add-plat">+ 加一个</button></div>';
+  h+='<div class=\"hint\" style=\"margin:-2px 0 10px\">适配器就是工具包名（B站 bilibili_tools、小红书 xhsreader、AstrBook 用本包的 astrbook_*）。填好这儿就行——工作流每趟自己把平台清单和适配器名拼进提示词，新加平台不用改节点。只有工具本身改了名（比如搜视频不叫 search_videos 了），才要动手改工作流里那段步骤。没有对应的适配器？直接跟 AI 说一句，让它帮你装。</div>';
+  var plats=S.data.platforms||[];
+  for(var i=0;i<plats.length;i++) h+=platCard(plats[i],i);
+
+  // 账本位置
+  h+='<div class="card">';
+  h+='<div class="sec-h" style="margin:0 0 6px"><span class="bar"></span>账本</div>';
+  h+='<div class="muted" style="word-break:break-all">当前这本：<span style="color:var(--pink2)">'+esc(S.dataFile)+'</span></div>';
+  h+='<div class="hint">这份文件是唯一真身：面板改的是它，工作流读的也是它。改面板 = 改工作流。</div>';
+  h+='</div>';
+    // 主人寄语
+  h+='<div class="card">';
+  h+='<div class="sec-h" style="margin:0 0 4px"><span class="bar"></span>主人寄语</div>';
+  h+='<div class="hint" style="margin-top:0">全平台通用的一条，AI 每次出门前都会先看它。哪个平台单独有话说，写到那个平台卡片里的「主人寄语」去——两个都填时，平台那条优先。</div>';
+  h+='<textarea rows="3" data-note="user_note" placeholder="示例：多记事实少写感慨；看不懂的别硬编；评论区原话抄两句；没东西写就不写">'+esc(prefs.user_note||'')+'</textarea>';
+  h+='</div>';
+  // 日记写法规则
+  h+='<div class="card">';
+  h+='<div class="sec-h" style="margin:0 0 4px"><span class="bar"></span>日记写法规则</div>';
+  h+='<div class="hint" style="margin-top:0">AI 写「闲逛日记」时按这个来。可随时修改，改完下一趟按新的写。</div>';
+  h+='<textarea rows="6" data-note="diary_rule">'+esc(prefs.diary_rule||DEFAULT_DIARY_RULE)+'</textarea>';
+  h+='<div style="margin-top:9px"><button class="btn ghost wide" data-act="rule-reset">恢复默认规则</button></div>';
+  h+='</div>';
+
+  // 偏好标签
+  var ut=prefs.user_tags||[];
+  h+='<div class="card">';
+  h+='<div class="sec-h" style="margin:0 0 4px"><span class="bar"></span>AI 该多逛什么</div>';
+  h+='<div class="hint" style="margin-top:0">已添加的偏好标签，AI 会优先逛这些方向。</div>';
+  if(ut.length){
+    for(var u=0;u<ut.length;u++){
+      h+='<div class="row" style="margin-top:7px"><input type="text" data-utag="'+u+'" value="'+esc(ut[u].tag||'')+'" placeholder="标签名" />'
+        +'<button class="btn sm danger" data-act="del-utag" data-k="'+u+'">删</button></div>';
+    }
+  }else{
+    h+='<div class="muted" style="margin-top:6px">还没加过。</div>';
+  }
+  h+='<div class="row" style="margin-top:9px"><input type="text" id="newtag" placeholder="加一个偏好标签，比如 旧书店" value="'+esc(S.newTag)+'" />'
+    +'<button class="btn sm pri" data-act="add-utag">加</button></div>';
+  h+='</div>';
+
+  // 拉黑
+  var bt=prefs.blocked_tags||[];
+  h+='<div class="card">';
+  h+='<div class="sec-h" style="margin:0 0 4px"><span class="bar"></span>别再逛这些</div>';
+  h+='<div class="hint" style="margin-top:0">不想让 AI 再碰的标签写在这里，这些标签也不会出现在兴趣圈里。</div>';
+  if(bt.length){
+    h+='<div style="margin-top:7px">';
+    for(var b=0;b<bt.length;b++){
+      h+='<span class="tag" style="background:#FDECEC;color:#C0392B">'+esc(bt[b])
+        +' <b data-act="del-btag" data-k="'+b+'" style="cursor:pointer;margin-left:3px">✕</b></span>';
+    }
+    h+='</div>';
+  }else{
+    h+='<div class="muted" style="margin-top:6px">没拉黑过。</div>';
+  }
+  h+='<div class="row" style="margin-top:9px"><input type="text" id="blocktag" placeholder="写个不想看的标签" value="'+esc(S.blockDraft)+'" />'
+    +'<button class="btn sm pri" data-act="add-btag">加</button></div>';
+  h+='</div>';
+return h;
+}
+
+function platCard(p,idx){
+  var open=!!S.openPlat[p.id];
+  var acc=p.account||{};
+  var h='<div class="card tight">';
+  h+='<div class="row sb" data-act="toggle-plat" data-k="'+esc(p.id)+'" style="cursor:pointer">';
+  h+='<div class="row"><span style="font-size:15px">🌐</span><b style="font-size:14px">'+esc(p.name||'未命名')+'</b></div>';
+  h+='<div class="row"><span class="muted" style="color:'+(p.enabled?'var(--pink2)':'var(--ink3)')+'">'+(p.enabled?'启用':'停用')+'</span>'
+    +'<span class="arrow" style="'+(open?'transform:rotate(180deg)':'')+'">▾</span></div>';
+  h+='</div>';
+  if(!open) return h+'</div>';
+
+  h+='<div class="divider"></div>';
+  h+=swRow('启用这个平台',p.enabled,'t-plat-en',String(idx));
+  h+='<label class="f">平台名</label><input type="text" data-plat="'+idx+'" data-f="name" value="'+esc(p.name||'')+'" />';
+  h+='<label class="f">平台地址</label><input type="text" data-plat="'+idx+'" data-f="homepage" value="'+esc(p.homepage||'')+'" placeholder="https://..." />';
+  h+='<label class="f">适配器（工具包）</label><input type="text" data-plat="'+idx+'" data-f="adapter" value="'+esc(p.adapter||'')+'" placeholder="例如 bilibili_tools" />';
+
+  h+='<div class="divider"></div>';
+  h+='<div style="font-size:12.5px;font-weight:700;margin-bottom:2px">AI 能对它做什么</div>';
+  h+='<div class="hint" style="margin:0 0 4px">默认全部关闭。开启后 AI 才能执行对应动作，关闭时只读。</div>';
+  for(var k=0;k<PERMS.length;k++){
+    var pm=PERMS[k];
+    h+=swRow(pm.label,!!(p.permissions&&p.permissions[pm.k]),'t-perm',idx+'|'+pm.k);
+  }
+
+  h+='<div class="divider"></div>';
+  h+='<label class="f">主人寄语（这个平台）</label>';
+  h+='<textarea rows="2" data-plat="'+idx+'" data-f="owner_note" placeholder="这个平台单独交代的话，比如：B站看作品，别只盯评论区">'+esc(p.owner_note||'')+'</textarea>';
+  h+='<div class="hint" style="margin:2px 0 0">留空就跟设置页那条全局寄语走；两个都填时，这条优先。</div>';
+  h+='<div class="divider"></div>';
+  h+='<div style="font-size:12.5px;font-weight:700">账号</div>';
+  h+='<div class="chips" style="margin-top:7px">';
+  [['guest','路人'],['cookie','Cookie'],['password','账密'],['token','Token']].forEach(function(m){
+    var on=(acc.mode||'guest')===m[0];
+    h+='<span class="chip'+(on?' on':'')+'" data-act="acct-mode" data-k="'+idx+'|'+m[0]+'">'+m[1]+'</span>';
+  });
+  h+='</div>';
+  var _mm=(acc.mode||'guest');
+  var _tips={guest:['零风险','#2E7D32','不带任何登录凭证，只看公开内容。完整字幕、部分评论可能拿不到。'],cookie:['中风险','#B26A00','带登录凭证去逛，能拿到登录后才有的内容。Cookie 等于半把钥匙——谁拿到都能登你的号，逛过什么也会留在账号记录里。建议用小号，别用主号。'],token:['中低风险','#0F7B8A','填平台发的访问令牌（Token），不存账号密码。令牌等于一把钥匙，谁拿到都能用你的身份——别外传；失效了回平台重新取一枚。'],password:['高风险 · 不推荐','#C62828','直接拿账号密码登录。密码会明文存在本机；平台多半有验证码/设备校验，自动登录成功率低，还容易触发风控把号锁了。不建议用。']};
+  var _t=_tips[_mm]||_tips.guest;
+  h+='<div style="margin-top:8px;font-size:12px;line-height:1.7;color:#555;background:rgba(0,0,0,.03);border-radius:8px;padding:8px 10px">';
+  h+='<div>当前模式：<b style="color:'+_t[1]+'">'+_t[0]+'</b></div>';
+  h+='<div style="margin-top:2px">'+_t[2]+'</div>';
+  h+='<div style="margin-top:6px;color:#888">四种模式区别：<b>路人</b>=只看公开内容 · <b>Cookie</b>=能看登录内容（凭证等于半把钥匙） · <b>Token</b>=填平台令牌，不存账密 · <b>账密</b>=密码明文存本机，不推荐</div>';
+  h+='</div>';
+  if((acc.mode||'guest')!=='guest'){
+    // 登录页地址仅在账密模式显示（见下方 password 分支）
+    if(acc.mode==='password'){
+      h+='<label class="f">登录页地址</label><input type="text" data-acct="'+idx+'" data-f="login_url" value="'+esc(acc.login_url||'')+'" placeholder="https://..." />';
+      h+='<label class="f">账号</label><input type="text" data-acct="'+idx+'" data-f="username" value="'+esc(acc.username||'')+'" />';
+      h+='<label class="f">密码</label><input type="password" data-acct="'+idx+'" data-f="password" value="'+esc(acc.password||'')+'" />';
+    }else if(acc.mode==='token'){
+      h+='<label class="f">Token</label><textarea rows="3" data-acct="'+idx+'" data-f="token" placeholder="粘贴平台发的访问令牌">'+esc(acc.token||'')+'</textarea>';
+      h+='<label class="f">令牌备注（可选）</label><input type="text" data-acct="'+idx+'" data-f="token_note" value="'+esc(acc.token_note||'')+'" placeholder="例如 astrbook Bot Token" />';
+    }else{
+      h+='<label class="f">Cookie</label><textarea rows="3" data-acct="'+idx+'" data-f="cookie" placeholder="粘贴登录后的 Cookie">'+esc(acc.cookie||'')+'</textarea>';
+    }
+    h+=swRow('标记为已登录（上线）',!!acc.online,'t-online',String(idx));
+  }
+  var _lastRec=null, _recs=S.data.records||[];
+  for(var _ri=0;_ri<_recs.length;_ri++){
+    var _r=_recs[_ri];
+    if(_r&&_r.platform===p.name&&typeof _r.ts==='number'&&(!_lastRec||_r.ts>_lastRec.ts)) _lastRec=_r;
+  }
+  var _loginAt=Math.max(Number(acc.login_at)||0,_lastRec?_lastRec.ts:0);
+  var _logoutAt=Math.max(Number(acc.logout_at)||0,(_lastRec&&!acc.online)?_lastRec.ts:0);
+  h+='<div class="muted" style="margin-top:8px">上次上线 '+fmtStamp(_loginAt)+' · 上次下线 '+fmtStamp(_logoutAt)+'</div>';
+  // （原提示已并入上方风险说明）
+  h+='<div style="margin-top:11px"><button class="btn danger wide" data-act="del-plat" data-k="'+idx+'">移除这个平台</button></div>';
+  h+='</div>';
+  return h;
+}
+
+/* ============ 统计页 ============ */
+function statsTags(){
+  var counts=tagCounts();
+  var blocked=(S.data.preferences&&S.data.preferences.blocked_tags)||[];
+  var userTags=(S.data.preferences&&S.data.preferences.user_tags)||[];
+  var map={};
+  var recs=allRecords();
+  var cutTs=0;
+  if(S.chartRange!=='all'){
+    var days=S.chartRange==='7'?7:30;
+    var d=new Date(); d.setDate(d.getDate()-(days-1)); d.setHours(0,0,0,0);
+    cutTs=d.getTime();
+  }
+  // 按时间窗重算，而不是用总计数
+  for(var i=0;i<recs.length;i++){
+    var r=recs[i];
+    if(cutTs && (r.ts||0)<cutTs) continue;
+    var ts=r.tags||[];
+    for(var j=0;j<ts.length;j++){
+      var t=ts[j];
+      if(blocked.indexOf(t)>=0) continue;
+      map[t]=(map[t]||0)+1;
+    }
+  }
+  for(var u=0;u<userTags.length;u++){
+    var ut=userTags[u]&&userTags[u].tag;
+    if(!ut) continue;
+    if(blocked.indexOf(ut)>=0) continue;
+    if(map[ut]===undefined) map[ut]=0;
+  }
+  var arr=[];
+  for(var k in map){ if(Object.prototype.hasOwnProperty.call(map,k)) arr.push({tag:k,count:map[k],mine:userTags.some(function(x){return x&&x.tag===k;})}); }
+  arr.sort(function(a,b){ return b.count-a.count; });
+  return arr;
+}
+
+function svgRing(tags){
+  if(!tags.length) return '<div class="empty"><div class="big">◎</div><p>还没逛出偏好来</p></div>';
+  var W=300,H=250,cx=W/2,cy=H/2;
+  var top=tags.slice(0,6);
+  var total=0;
+  for(var q=0;q<top.length;q++) total+=Math.max(0,Number(top[q].count)||0);
+  if(total<=0) total=1;
+  var R0=116, Rin=20, avail=R0-Rin;
+  // 环带厚度按占比算：最薄 11 保证看得见，单块最厚 0.56 留出中心
+  var ths=[],sum=0;
+  for(var i=0;i<top.length;i++){
+    var th=Math.max(11, Math.min(avail*0.56, avail*(Math.max(0,Number(top[i].count)||0)/total)));
+    ths.push(th); sum+=th;
+  }
+  if(sum>avail){ var kk=avail/sum; for(var z=0;z<ths.length;z++) ths[z]*=kk; }
+  var h='<svg viewBox="0 0 '+W+' '+H+'" width="100%">';
+  var cur=R0, picks=[];
+  for(var j=0;j<top.length;j++){
+    var t=top[j];
+    var col=PALETTE[j%PALETTE.length];
+    var ro=cur, ri=Math.max(0,cur-ths[j]);
+    var rm=(ro+ri)/2, sw=ro-ri;
+    var pct=Math.round((Math.max(0,Number(t.count)||0)/total)*100);
+    picks[j]={tag:t.tag,count:t.count,pct:pct};
+    var on=(S.chartPick===j);
+    h+='<circle class="seg'+(on?' on':'')+'" data-act="chartpick" data-v="'+j+'" cx="'+cx+'" cy="'+cy+'" r="'+rm.toFixed(1)+'"'
+      +' fill="none" stroke="'+col+'" stroke-width="'+sw.toFixed(1)+'" opacity="'+(on?1:0.94)+'" />';
+    if(sw>=10){
+      h+='<text class="pct" x="'+cx+'" y="'+(cy-rm+3.4).toFixed(1)+'" text-anchor="middle" font-size="9.5" fill="#fff">'+pct+'%</text>';
+    }
+    cur=ri;
+  }
+  if(cur>=36){
+    h+='<circle cx="'+cx+'" cy="'+cy+'" r="'+(cur-3).toFixed(1)+'" fill="#FCF6F9" />';
+    h+='<text x="'+cx+'" y="'+(cy-4)+'" text-anchor="middle" font-size="12.5" font-weight="700" fill="#2B2430">'+esc(top[0].tag)+'</text>';
+    h+='<text x="'+cx+'" y="'+(cy+12)+'" text-anchor="middle" font-size="9.5" fill="#A198A8">'+top[0].count+' 条 · 占 '+Math.round((Math.max(0,Number(top[0].count)||0)/total)*100)+'%</text>';
+  }
+  h+='</svg>';
+  window._chartData=picks;
+  return h;
+}
+
+function arcPath(cx,cy,ro,ri,a0,a1){
+  function pt(a,r){ return [(cx+r*Math.cos(a)).toFixed(2),(cy+r*Math.sin(a)).toFixed(2)]; }
+  var large=(a1-a0)>Math.PI?1:0;
+  var p0=pt(a0,ro),p1=pt(a1,ro),p2=pt(a1,ri),p3=pt(a0,ri);
+  if(ri<=0.5){
+    return 'M'+cx+','+cy+' L'+p0[0]+','+p0[1]+' A'+ro+','+ro+' 0 '+large+' 1 '+p1[0]+','+p1[1]+' Z';
+  }
+  return 'M'+p0[0]+','+p0[1]+' A'+ro+','+ro+' 0 '+large+' 1 '+p1[0]+','+p1[1]
+    +' L'+p2[0]+','+p2[1]+' A'+ri+','+ri+' 0 '+large+' 0 '+p3[0]+','+p3[1]+' Z';
+}
+
+function svgPie(tags,donut){
+  if(!tags.length) return '<div class="empty"><div class="big">◎</div><p>还没逛出偏好来</p></div>';
+  var W=320,H=254,cx=W/2,cy=H/2-2,ro=86,ri=donut?46:0;
+  var total=tags.reduce(function(a,b){ return a+Math.max(0,Number(b.count)||0); },0);
+  var h='<svg viewBox="0 0 '+W+' '+H+'" width="100%">';
+  var picks=[];
+  if(total<=0){
+    h+='<circle cx="'+cx+'" cy="'+cy+'" r="'+ro+'" fill="#F2EBF0" />';
+    h+='<text x="'+cx+'" y="'+(cy+4)+'" text-anchor="middle" font-size="12" fill="#A198A8">只有偏好标签，还没有记录</text>';
+  }else{
+    var a=-Math.PI/2;
+    for(var i=0;i<tags.length;i++){
+      var t=tags[i];
+      var share=(Math.max(0,Number(t.count)||0))/total;
+      var span=Math.PI*2*share;
+      if(span<=0) continue;
+      var pct=Math.round(share*100);
+      picks[i]={tag:t.tag,count:t.count,pct:pct};
+      var on=(S.chartPick===i);
+      h+='<path class="seg'+(on?' on':'')+'" data-act="chartpick" data-v="'+i+'" d="'+arcPath(cx,cy,ro,ri,a,a+span)+'"'
+        +' fill="'+PALETTE[i%PALETTE.length]+'" stroke="#fff" stroke-width="1.6" opacity="'+(on?1:0.94)+'" />';
+      var mid=a+span/2;
+      if(share>=0.075){
+        // 够大的扇形，数字直接压在块上
+        var lr=donut?((ro+ri)/2):(ro*0.66);
+        var lx=cx+lr*Math.cos(mid), ly=cy+lr*Math.sin(mid);
+        h+='<text class="pct" x="'+lx.toFixed(1)+'" y="'+(ly+3.6).toFixed(1)+'" text-anchor="middle" font-size="10.5" fill="#fff">'+pct+'%</text>';
+      }else{
+        // 太窄，数字挪到圈外，带引线
+        var orr=ro+13;
+        var ox=cx+orr*Math.cos(mid), oy=cy+orr*Math.sin(mid);
+        var anch=(Math.cos(mid)>=0)?'start':'end';
+        ox+=(anch==='start'?2:-2);
+        h+='<text class="pct" x="'+ox.toFixed(1)+'" y="'+(oy+3.4).toFixed(1)+'" text-anchor="'+anch+'" font-size="9.5" fill="'+PALETTE[i%PALETTE.length]+'">'+pct+'%</text>';
+      }
+      a+=span;
+    }
+  }
+  if(donut){
+    h+='<text x="'+cx+'" y="'+(cy-1)+'" text-anchor="middle" font-size="20" font-weight="700" fill="#2B2430">'+total+'</text>';
+    h+='<text x="'+cx+'" y="'+(cy+15)+'" text-anchor="middle" font-size="10" fill="#A198A8">次浏览</text>';
+  }
+  h+='</svg>';
+  window._chartData=picks;
+  return h;
+}
+
+function svgBar(tags){
+  if(!tags.length) return '<div class="empty"><div class="big">◎</div><p>还没逛出偏好来</p></div>';
+  var max=Math.max.apply(null,tags.map(function(t){return Math.max(0,Number(t.count)||0);}));
+  if(max<=0) max=1;
+  var total=tags.reduce(function(a,b){ return a+Math.max(0,Number(b.count)||0); },0);
+  if(total<=0) total=1;
+  var picks=[];
+  var h='<div class="bar-wrap" style="width:100%">';
+  for(var i=0;i<tags.length;i++){
+    var t=tags[i];
+    var c=Math.max(0,Number(t.count)||0);
+    var pct=Math.max(4,Math.round(c/max*100));
+    var share=Math.round(c/total*100);
+    picks[i]={tag:t.tag,count:t.count,pct:share};
+    var col=PALETTE[i%PALETTE.length];
+    var on=(S.chartPick===i);
+    h+='<div class="bar-row'+(on?' on':'')+'" data-act="chartpick" data-v="'+i+'">'
+      +'<div class="bar-top"><span class="sp">'+esc(t.tag)+'</span>'
+      +'<span class="bv2"><b>'+t.count+'</b> 条 · '+share+'%</span></div>'
+      +'<div class="bar-track"><div class="bar-fill" style="width:'+pct+'%;background:'+col+'"></div></div></div>';
+  }
+  window._chartData=picks;
+  return h+'</div>';
+}
+
+function svgTrend(){
+  var recs=allRecords();
+  if(!recs.length) return '<div class="empty"><div class="big">◎</div><p>还没有记录，画不出曲线</p></div>';
+  // 最近 14 天
+  var days=14,pts=[];
+  for(var i=days-1;i>=0;i--){
+    var key=daysAgoStr(i);
+    var n=0,m=0;
+    for(var j=0;j<recs.length;j++){
+      if(recs[j].date===key){ n++; m+=(recs[j].items||[]).length; }
+    }
+    pts.push({d:key,n:n,m:m});
+  }
+  var W=320,H=200,pad=28;
+  var max=Math.max(1,Math.max.apply(null,pts.map(function(p){return p.m;})));
+  var iw=W-pad*2, ih=H-pad*2;
+  function X(i){ return pad + (pts.length<=1?iw/2:iw*i/(pts.length-1)); }
+  function Y(v){ return pad + ih - ih*(v/max); }
+  var line='',area='';
+  for(var k=0;k<pts.length;k++){
+    line+=(k?' L':'M')+X(k).toFixed(1)+','+Y(pts[k].m).toFixed(1);
+  }
+  area=line+' L'+X(pts.length-1).toFixed(1)+','+(pad+ih)+' L'+X(0).toFixed(1)+','+(pad+ih)+' Z';
+  var h='<svg viewBox="0 0 '+W+' '+H+'" width="100%">';
+  h+='<defs><linearGradient id="g1" x1="0" y1="0" x2="0" y2="1">'
+    +'<stop offset="0%" stop-color="#D6336C" stop-opacity="0.28"/>'
+    +'<stop offset="100%" stop-color="#D6336C" stop-opacity="0.02"/></linearGradient></defs>';
+  // 网格
+  for(var g=0;g<=2;g++){
+    var y=pad+ih*g/2;
+    h+='<line x1="'+pad+'" y1="'+y+'" x2="'+(pad+iw)+'" y2="'+y+'" stroke="#EFE6EC" stroke-width="1"/>';
+  }
+  h+='<path d="'+area+'" fill="url(#g1)"/>';
+  h+='<path d="'+line+'" fill="none" stroke="#D6336C" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>';
+  var picks=[];
+  var nz=0;
+  for(var c0=0;c0<pts.length;c0++){ if(pts[c0].m>0) nz++; }
+  for(var p=0;p<pts.length;p++){
+    picks[p]={tag:pts[p].d,count:pts[p].m,pct:null,sub:pts[p].n+' 笔 · '+pts[p].m+' 条',
+      x:X(p).toFixed(1),y:Y(pts[p].m).toFixed(1)};
+    if(pts[p].m>0){
+      h+='<circle cx="'+X(p).toFixed(1)+'" cy="'+Y(pts[p].m).toFixed(1)+'" r="3" fill="#fff" stroke="#D6336C" stroke-width="2"/>';
+      if(nz<=8){
+        h+='<text class="pct" x="'+X(p).toFixed(1)+'" y="'+(Y(pts[p].m)-7).toFixed(1)+'" text-anchor="middle" font-size="9" fill="#B32A59">'+pts[p].m+'</text>';
+      }
+    }
+  }
+  h+='<line id="tmark-line" x1="0" y1="'+pad+'" x2="0" y2="'+(pad+ih)+'" stroke="#D6336C" stroke-width="1" stroke-dasharray="3 3" opacity="0"/>';
+  h+='<circle id="tmark-dot" cx="0" cy="0" r="5" fill="#D6336C" stroke="#fff" stroke-width="2" opacity="0"/>';
+  for(var q2=0;q2<pts.length;q2++){
+    h+='<circle class="seg hit" data-act="chartpick" data-v="'+q2+'" cx="'+X(q2).toFixed(1)+'" cy="'+Y(pts[q2].m).toFixed(1)+'" r="9" fill="transparent"/>';
+  }
+  h+='<text x="'+pad+'" y="'+(H-8)+'" font-size="9" fill="#A198A8">'+esc(pts[0].d.slice(5))+'</text>';
+  h+='<text x="'+(W-pad)+'" y="'+(H-8)+'" font-size="9" fill="#A198A8" text-anchor="end">'+esc(pts[pts.length-1].d.slice(5))+'</text>';
+  h+='<text x="'+pad+'" y="'+(pad-9)+'" font-size="9" fill="#A198A8">最多 '+max+' 条/天</text>';
+  h+='</svg>';
+  window._chartData=picks;
+  return h;
+}
+
+function svgColumn(tags){
+  var list=tags.slice(0);
+  if(!list.length) return '<div class="muted">还没有数据。</div>';
+  var mx=1;
+  for(var i=0;i<list.length;i++) mx=Math.max(mx,Number(list[i].count)||0);
+  var h='<div style="width:100%"><div class="cols">';
+  for(var j=0;j<list.length;j++){
+    var t=list[j], hp=Math.round((Number(t.count)||0)/mx*100);
+    h+='<div class="col"><div class="col-n">'+(Number(t.count)||0)+'</div>'
+      +'<div class="col-b seg" data-act="chartpick" data-v="'+j+'" style="height:'+Math.max(5,hp)+'%;background:'+PALETTE[j%PALETTE.length]+'" title="'+esc(t.tag)+'"></div></div>';
+  }
+  h+='</div><div class="muted" style="text-align:center;margin-top:6px">左右滑，能看全部标签</div></div>';
+  return h;
+}
+function statsMain(){
+  var tags=statsTags();
+  tags.sort(function(a,b){ return (Number(b.count)||0)-(Number(a.count)||0); });
+  var prefs=S.data.preferences||{};
+  var h='';
+
+  h+='<div class="card">';
+  h+='<div class="sec-h" style="margin:0 0 8px"><span class="bar"></span>兴趣图</div>';
+  h+='<div class="chips wrapx">';
+  [['ring','柱状'],['donut','环形'],['pie','扇形'],['bar','条形'],['trend','趋势']].forEach(function(c){
+    h+='<span class="chip'+(S.chart===c[0]?' on':'')+'" data-act="chart" data-v="'+c[0]+'">'+c[1]+'</span>';
+  });
+  h+='</div>';
+
+  if(S.chart!=='trend'){
+    h+='<div class="chips wrapx" style="margin-top:7px;margin-bottom:9px">';
+    [['all','全部'],['30','近 30 天'],['7','近 7 天']].forEach(function(c){
+      h+='<span class="chip'+(S.chartRange===c[0]?' on':'')+'" data-act="chartrange" data-v="'+c[0]+'">'+c[1]+'</span>';
+    });
+    h+='</div>';
+  }else{
+    h+='<div style="height:7px"></div>';
+  }
+
+  h+='<div class="chart'+(S.chart==='ring'?' chart-col':'')+'">';
+  if(S.chart==='ring') h+=svgColumn(tags);
+  else if(S.chart==='donut') h+=svgPie(tags,true);
+  else if(S.chart==='pie') h+=svgPie(tags,false);
+  else if(S.chart==='bar') h+=svgBar(tags);
+  else h+=svgTrend();
+  h+='</div>';
+
+  h+='<div class="hint">'
+    +(S.chart==='ring'?'排行：竖条越高 = 看得越多。'
+      :S.chart==='trend'?'趋势：最近 14 天，每天看了几条。'
+      :'按占比切分，色块越大 = 看得越多。')
+    +'</div>';
+  h+='<div class="chart-tip" id="charttip"></div>';
+  h+='<div class="chart-hint">'+(S.chart==='trend'
+      ?'点一下折线上的点，看那天看了多少'
+      :'点一下色块，它会亮起来，其余变淡')+'</div>';
+
+  if(S.chart!=='trend'&&tags.length){
+    var lgTotal=0;
+    for(var q3=0;q3<tags.length;q3++) lgTotal+=Math.max(0,Number(tags[q3].count)||0);
+    if(lgTotal<=0) lgTotal=1;
+    h+='<div class="divider"></div><div class="legend">';
+    var lgShow=S.tagAll?tags.length:Math.min(tags.length,8);
+    for(var i=0;i<lgShow;i++){
+      var t=tags[i];
+      var lpct=Math.round((Math.max(0,Number(t.count)||0)/lgTotal)*100);
+      h+='<div class="lg'+(S.chartPick===i?' on':'')+'" data-i="'+i+'"><span class="dot" style="background:'+PALETTE[i%PALETTE.length]+'"></span>'
+        +'<span class="nm">'+esc(t.tag)+'</span>'
+        +(t.mine?'<span class="own">已添加</span>':'')
+        +'<span class="ct">'+t.count+' 条 · '+lpct+'%</span></div>';
+    }
+    h+='</div>';
+  }
+  h+='</div>';
+
+  if(tags.length>8){
+    h+='<div style="margin-top:10px"><button class="btn ghost wide" data-act="tag-all">'
+      +(S.tagAll?'收起，只看前 8 个':('还有 '+(tags.length-8)+' 个标签 · 看全部'))+'</button></div>';
+  }
+  return h;
+}
+
+/* ============ 记忆页 ============ */
+function kindLabel(k){
+  return ({like:'点赞',dislike:'点踩',comment:'评论',favorite:'收藏',unfavorite:'取消收藏',follow:'关注',unfollow:'取关',public_reply:'公共回复',view:'看过',read:'看过'})[k]||k||'';
+}
+function starChart(ppl){
+  var W=320,H=252,x0=38,x1=300,yT=22,yB=228,yM=125;
+  if(!S.starMode){ try{ S.starMode=localStorage.getItem('xg_star_mode')||'star'; }catch(e){ S.starMode='star'; } }
+  var dark=(S.starMode!=='plain');
+  function px(v){ v=Math.max(0,Math.min(100,Number(v)||0)); return x0+(v/100)*(x1-x0); }
+  function py(v){ v=Math.max(-100,Math.min(100,Number(v)||0)); return yM-(v/100)*(yM-yT); }
+  function sp(cx,cy,r){ var p=[]; for(var i=0;i<10;i++){ var a=-Math.PI/2+i*Math.PI/5; var rr=(i%2===0)?r:(r*0.42); p.push((cx+rr*Math.cos(a)).toFixed(1)+','+(cy+rr*Math.sin(a)).toFixed(1)); } return 'M'+p.join('L')+'Z'; }
+  var cL=dark?'rgba(150,190,255,0.28)':'var(--line)', cT=dark?'rgba(190,215,255,0.72)':'var(--ink3)', cN=dark?'#eaf2ff':'var(--ink2)', cQ=dark?'rgba(160,200,255,0.42)':'var(--ink3)';
+  var all=ppl||[], list=[], i;
+  for(i=0;i<all.length;i++){ var p0=all[i]||{}; var nf=(p0.facts||[]).length; var v0=(typeof p0.intimacy==='number'?p0.intimacy:20); var l0=(typeof p0.liking==='number'?p0.liking:0); if(nf<2 && v0<=20 && l0===0) continue; list.push(p0); }
+  var skip=all.length-list.length;
+  var gs=[];
+  for(i=0;i<list.length;i++){ var p=list[i]||{}; var iv=(typeof p.intimacy==='number'?p.intimacy:20); var lk=(typeof p.liking==='number'?p.liking:0); var n=(p.facts||[]).length; var cx=px(iv), cy=py(lk); var key=cx.toFixed(1)+'_'+cy.toFixed(1); var g=null; for(var j=0;j<gs.length;j++){ if(gs[j].key===key){ g=gs[j]; break; } } if(!g){ g={key:key,cx:cx,cy:cy,items:[]}; gs.push(g); } g.items.push({name:p.name||'',iv:iv,lk:lk,n:n}); }
+  var h='<div class="card">';
+  h+='<div class="sec-h" style="margin:0 0 4px"><span class="bar"></span>关系星图 · 谁在哪<button class="btn ghost" data-act="star-mode" style="float:right;margin-top:-2px;padding:2px 10px;font-size:11px">'+(dark?'简约':'星空')+'</button></div>';
+  h+='<div class="hint" style="margin-top:0">横轴=亲密度（左陌生→右核心），纵轴=好感（下讨厌→上喜欢）。星越大，打交道越多；点一下星星，看这个位置都有谁。</div>';
+  if(!gs.length){ h+='<div class="muted" style="margin-top:10px">还没攒够人——只打过一次照面的先不上图。</div></div>'; return h; }
+  h+='<div style="position:relative">';
+  h+='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;display:block;margin-top:8px">';
+  if(dark){
+    h+='<defs><linearGradient id="xgSky" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#0a1024"/><stop offset="55%" stop-color="#111a38"/><stop offset="100%" stop-color="#0c1230"/></linearGradient></defs>';
+    h+='<rect x="0" y="0" width="'+W+'" height="'+H+'" rx="10" fill="url(#xgSky)"/>';
+    var sd=20261015;
+    function rnd(){ sd=(sd*1103515245+12345)&0x7fffffff; return sd/0x7fffffff; }
+    for(var s2=0;s2<60;s2++){ h+='<circle cx="'+(rnd()*W).toFixed(1)+'" cy="'+(rnd()*H).toFixed(1)+'" r="'+(0.5+rnd()*1.1).toFixed(1)+'" fill="#ffffff" opacity="'+(0.15+rnd()*0.5).toFixed(2)+'"/>'; }
+  }
+  h+='<line x1="'+x0+'" y1="'+yB+'" x2="'+x1+'" y2="'+yB+'" stroke="'+cL+'"/>';
+  h+='<line x1="'+x0+'" y1="'+yT+'" x2="'+x0+'" y2="'+yB+'" stroke="'+cL+'"/>';
+  h+='<line x1="'+x0+'" y1="'+yM+'" x2="'+x1+'" y2="'+yM+'" stroke="'+cL+'" stroke-dasharray="3 3"/>';
+  h+='<line x1="'+((x0+x1)/2)+'" y1="'+yT+'" x2="'+((x0+x1)/2)+'" y2="'+yB+'" stroke="'+cL+'" stroke-dasharray="3 3"/>';
+  h+='<text x="'+(x0-4)+'" y="'+(yT+4)+'" font-size="8" text-anchor="end" fill="'+cT+'">+100</text>';
+  h+='<text x="'+(x0-4)+'" y="'+(yM+3)+'" font-size="8" text-anchor="end" fill="'+cT+'">0</text>';
+  h+='<text x="'+(x0-4)+'" y="'+yB+'" font-size="8" text-anchor="end" fill="'+cT+'">-100</text>';
+  h+='<text x="'+x0+'" y="'+(yB+10)+'" font-size="8" text-anchor="middle" fill="'+cT+'">陌生</text>';
+  h+='<text x="'+((x0+x1)/2)+'" y="'+(yB+10)+'" font-size="8" text-anchor="middle" fill="'+cT+'">熟人</text>';
+  h+='<text x="'+x1+'" y="'+(yB+10)+'" font-size="8" text-anchor="middle" fill="'+cT+'">核心</text>';
+  h+='<text x="'+(x1-4)+'" y="'+(yT+10)+'" font-size="9" text-anchor="end" fill="'+cQ+'">自己人</text>';
+  h+='<text x="'+(x1-4)+'" y="'+(yB-6)+'" font-size="9" text-anchor="end" fill="'+cQ+'">敬而远之</text>';
+  h+='<text x="'+(x0+4)+'" y="'+(yT+10)+'" font-size="9" fill="'+cQ+'">想认识</text>';
+  h+='<text x="'+(x0+4)+'" y="'+(yB-6)+'" font-size="9" fill="'+cQ+'">路人</text>';
+  for(i=0;i<gs.length;i++){
+    var gg=gs[i], mx=0, la=0, z;
+    for(z=0;z<gg.items.length;z++){ if(gg.items[z].n>mx) mx=gg.items[z].n; la+=gg.items[z].lk; }
+    la=la/gg.items.length;
+    var col=(la>0?(dark?'#ffd27a':'#d9785b'):(la<0?(dark?'#7db4ff':'#5b7fd9'):(dark?'#cfd8e8':'#9a9a9a')));
+    var r=(dark?3.6:4)+Math.min(mx,6)*(dark?0.55:1);
+    var X=gg.cx.toFixed(1), Y=gg.cy.toFixed(1);
+    if(S.starSel===gg.key){ h+='<circle cx="'+X+'" cy="'+Y+'" r="'+(r*3.4).toFixed(1)+'" fill="none" stroke="'+col+'" stroke-width="1.2" opacity="0.9"/>'; }
+    if(dark){ h+='<circle cx="'+X+'" cy="'+Y+'" r="'+(r*2.6).toFixed(1)+'" fill="'+col+'" opacity="0.13"/><path d="'+sp(gg.cx,gg.cy,r)+'" fill="'+col+'" opacity="0.95"/>'; }
+    else { h+='<circle cx="'+X+'" cy="'+Y+'" r="'+r.toFixed(1)+'" fill="'+col+'" opacity="0.72"/>'; }
+    var lb=(gg.items.length>1?(gg.items.length+'人'):gg.items[0].name);
+    h+='<text x="'+X+'" y="'+(gg.cy-r-5).toFixed(1)+'" font-size="9" text-anchor="middle" fill="'+cN+'">'+esc(lb)+'</text>';
+    h+='<circle cx="'+X+'" cy="'+Y+'" r="'+(r+10).toFixed(1)+'" fill="transparent" data-act="star-tap" data-v="'+gg.key+'" style="cursor:pointer"/>';
+  }
+  h+='</svg>';
+  if(S.starSel){
+    var sg=null;
+    for(i=0;i<gs.length;i++){ if(gs[i].key===S.starSel){ sg=gs[i]; break; } }
+    if(sg){
+      var lp=sg.cx/W*100, tp=sg.cy/H*100, fl=(lp>52);
+      h+='<div style="position:absolute;'+(fl?('right:'+Math.max(2,100-lp)+'%'):('left:'+Math.min(84,lp)+'%'))+';top:'+Math.min(70,Math.max(2,tp-8)).toFixed(1)+'%;width:126px;max-height:100px;overflow-y:auto;background:#fff;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,0.3);padding:8px 10px;z-index:6">';
+      h+='<div style="font-size:11px;color:#8b8b8b;margin-bottom:2px">亲密 '+sg.items[0].iv+' · 好感 '+(sg.items[0].lk>0?'+':'')+sg.items[0].lk+'</div>';
+      for(var w=0;w<sg.items.length;w++){ h+='<div style="font-size:12.5px;color:#222;padding:2px 0">'+esc(sg.items[w].name)+'</div>'; }
+      h+='</div>';
+    }
+  }
+  h+='</div>';
+  h+='<div class="hint">横轴＝熟不熟，纵轴＝喜不喜欢。两个分开看——熟的人也可能不喜欢，不熟的人也可能一眼就顺眼。'+(skip?('另有 '+skip+' 位只打过一次照面的，先不上图。'):'')+'</div>';
+  h+='</div>';
+  return h;
+}
+
+function trailMain(){
+  var acts=(S.data.actions||[]).slice().sort(function(a,b){ return (b.ts||0)-(a.ts||0); });
+  var ppl=(S.data.persons||[]).slice().sort(function(a,b){ return (b.updatedAt||0)-(a.updatedAt||0); });
+  var h='';
+  var rowS='padding:9px 0;border-top:1px dashed var(--line)';
+  var tS='font-size:13.5px;font-weight:700';
+  var cS='font-size:12.5px;color:var(--ink2);margin-top:3px;line-height:1.55';
+  var mS='font-size:11px;color:var(--ink3);margin-top:3px';
+
+  h+='<div class="card">';
+  h+='<div class="sec-h" style="margin:0 0 4px"><span class="bar"></span>动作流水 · 执行记录</div>';
+  h+='<div class="hint" style="margin-top:0">点过赞、评过论、收藏过谁——一条条记着。共 '+acts.length+' 条。</div>';
+  var gm=S.actGroup||'time';
+  h+='<div class="chips wrapx" style="margin-top:9px">';
+  h+='<span class="chip'+(gm==='time'?' on':'')+'" data-act="act-group" data-v="time">按时间</span>';
+  h+='<span class="chip'+(gm==='platform'?' on':'')+'" data-act="act-group" data-v="platform">按平台</span>';
+  h+='<span class="chip'+(gm==='kind'?' on':'')+'" data-act="act-group" data-v="kind">按互动</span>';
+  h+='</div>';
+  h+='<div class="scrolly">';
+  if(!acts.length){ h+='<div class="muted" style="margin-top:8px">还没动过手。</div>'; }
+  else{
+    var order=[], map={};
+    for(var ai0=0;ai0<acts.length;ai0++){
+      var a0=acts[ai0]||{};
+      var kk0=(gm==='platform'? (a0.platform||'未知平台') : (gm==='kind'? (kindLabel(a0.kind)||'其它') : (a0.date||'')));
+      if(!map[kk0]){ map[kk0]=[]; order.push(kk0); }
+      map[kk0].push(a0);
+    }
+    for(var oi=0;oi<order.length;oi++){
+      var kk=order[oi], arr2=map[kk];
+      h+='<div style="margin-top:12px;font-size:12px;color:var(--ink3);font-weight:700">'+esc(kk)+' · '+arr2.length+' 条</div>';
+      for(var ai=0;ai<arr2.length;ai++){
+        var a=arr2[ai]||{};
+        h+='<div style="'+rowS+'">'
+          +'<div style="'+tS+'">'+esc(kindLabel(a.kind))+(a.platform?(' · '+esc(a.platform)):'')+'</div>'
+          +'<div style="'+cS+'">'+esc(a.title||a.target||'')+'</div>'
+          +(a.text?('<div style="'+cS+'">「'+esc(a.text)+'」</div>'):'')
+          +'<div style="'+mS+'">'+esc(a.date||'')+' '+esc(a.time||'')+(a.result&&a.result!=='ok'?(' · '+esc(a.result)):'')+'</div>'
+          +'</div>';
+      }
+    }
+  }
+  h+='</div>';
+
+  h+=starChart(ppl);
+    h+='<div class="card">';
+  h+='<div class="sec-h" style="margin:0 0 4px"><span class="bar"></span>人物卡 · 接触过的人</div>';
+  h+='<div class="hint" style="margin-top:0">记下遇到的人。点名字展开看细节。共 '+ppl.length+' 张。</div>';
+  h+='<div class="scrolly">';
+  if(!ppl.length){ h+='<div class="muted" style="margin-top:8px">还没记下人。</div>'; }
+  else{
+    var opened=S.pOpen||{};
+    for(var j=0;j<ppl.length;j++){
+      var p=ppl[j]||{};
+      var pk=(p.platform||'')+'|'+(p.name||'');
+      var on=!!opened[pk];
+      var iv=(typeof p.intimacy==='number'?p.intimacy:20);
+      var lk=(typeof p.liking==='number'?p.liking:0);
+      h+='<div style="'+rowS+'">';
+      h+='<div data-act="p-open" data-v="'+esc(pk)+'" style="display:flex;align-items:center;cursor:pointer">';
+      h+='<div style="flex:1;min-width:0"><div style="'+tS+'">'+esc(p.name||'')+(p.role?(' · '+esc(p.role)):'')+(p.platform?(' · '+esc(p.platform)):'')+'</div>'
+        +'<div style="'+mS+'">'+(p.impression?esc(p.impression):'——')+'</div></div>';
+      h+='<div style="text-align:right;flex:none;margin-left:8px"><div style="font-size:11px;color:var(--ink3)">亲密 '+iv+' · 好感 '+(lk>0?'+':'')+lk+'</div>'
+        +'<div style="font-size:11px;color:var(--ink3);margin-top:2px">'+(on?'收起 ▴':'展开 ▾')+'</div></div>';
+      h+='</div>';
+      if(on){
+        if(p.domain) h+='<div style="'+mS+'">领域：'+esc(p.domain)+'</div>';
+        if(p.tags&&p.tags.length) h+='<div style="'+mS+'">'+esc(p.tags.join(' · '))+'</div>';
+        var fs=p.facts||[];
+        for(var q=0;q<fs.length;q++){ var f=fs[q]||{}; h+='<div style="'+cS+'">· '+esc(f.text||'')+'</div>'; }
+      }
+      h+='</div>';
+    }
+  }
+  h+='</div>';
+
+  return h;
+}
+
+function memoryMain(){
+  var m=S.data.memory||{};
+  var mems=(m.memories||[]).slice().sort(function(a,b){ return (b.ts||0)-(a.ts||0); });
+  var keep=m.mode==='keep';
+  var h='';
+
+  h+='<div class="card">';
+  h+='<div class="sec-h" style="margin:0 0 4px"><span class="bar"></span>存储模式</div>';
+  h+='<div class="hint" style="margin-top:0">记忆与手记已合并，这里存的就是日记本身。</div>';
+  h+='<div class="chips wrapx" style="margin-top:9px">';
+  h+='<span class="chip'+(!keep?' on':'')+'" data-act="mem-mode" data-v="forget">遗忘模式</span>';
+  h+='<span class="chip'+(keep?' on':'')+'" data-act="mem-mode" data-v="keep">永不遗忘</span>';
+  h+='</div>';
+  h+='<div class="hint">'+(keep
+    ?'永不遗忘：只降权，不删、不压缩。记忆会一直在。'
+    :'遗忘模式：淡到一定程度先压成概括（模糊/美化），再淡就删除。')+'</div>';
+  h+='</div>';
+
+  if(!keep){
+    h+='<div class="card">';
+    h+='<div class="sec-h" style="margin:0 0 4px"><span class="bar"></span>遗忘曲线</div>';
+    h+='<div class="row sb" style="margin-top:10px"><span style="font-size:13.5px">记住近几天</span>'
+      +'<b style="color:var(--pink2)">'+esc(String(m.retention_days||7))+' 天</b></div>';
+    h+='<input type="range" min="1" max="30" step="1" value="'+esc(String(m.retention_days||7))+'" data-range="retention_days" />';
+    h+='<div class="muted">最低 1 天，最高 30 天。口径：一条记忆从「记得清清楚楚」淡到遗忘线，要多少天。</div>';
+
+    h+='<div class="row sb" style="margin-top:14px"><span style="font-size:13.5px">记忆模糊 / 美化偏移</span>'
+      +'<b style="color:var(--pink2)">'+Number(m.blur||0.3).toFixed(2)+'</b></div>';
+    h+='<input type="range" min="0" max="1" step="0.05" value="'+esc(String(m.blur||0.3))+'" data-range="blur" />';
+    h+='<div class="muted">0 = 原样记着，1 = 全凭印象。推荐不低于 0.3。</div>';
+
+    h+=swRow('淡化后先压缩成概括（节省空间）',m.compress,'t-mem','compress');
+    h+=swRow('每次闲逛自动执行一次遗忘曲线',m.auto_tick!==false,'t-mem','auto_tick');
+    h+='<div class="hint">压缩使用 Operit 已绑定的模型，无需另外配置 key。压到低于 '
+      +Number(m.forget_threshold||0.15).toFixed(2)+' 就删。</div>';
+    h+='<div style="margin-top:11px"><button class="btn ghost wide" data-act="mem-tick">现在走一遍遗忘曲线</button></div>';
+    h+='<div class="muted" style="margin-top:10px">改完记得点保存，未保存不会写入。</div>';
+    h+='<div class="row" style="gap:9px;margin-top:8px"><button class="btn pri" style="flex:1" data-act="mem-save">保存设置</button>'
+      +'<button class="btn ghost" style="flex:1" data-act="mem-reset">恢复默认</button></div>';
+    h+='</div>';
+  }
+
+  h+='<div class="card">';
+  h+='<div class="sec-h" style="margin:0 0 4px"><span class="bar"></span>与 Operit 记忆库打通</div>';
+  h+='<div class="hint" style="margin-top:0">把这边攒下的记忆整批倒进 Operit 记忆库的「闲逛手记」分类，那边召回时能直接撞见。倒过的不会重倒。</div>';
+  h+='<div style="margin-top:11px"><button class="btn pri wide" data-act="mem-import">全部同步到 Operit 记忆库</button></div>';
+  h+='<div class="muted" id="mem-import-hint" style="margin-top:6px">点一下，跑完结果写在这。</div>';
+  h+='</div>';
+  h+='<div class="card">';
+  h+='<div class="row sb"><div class="sec-h" style="margin:0"><span class="bar"></span>记忆库</div>'
+    +'<span class="muted">'+mems.length+' 条</span></div>';
+  var st=m.stats||{};
+  h+='<div class="hint" style="margin-top:4px">被记起 '+((st.recalls)||0)+' 次 · 压缩过 '+((st.compressed)||0)+' 条 · 忘掉 '+((st.forgotten)||0)+' 条</div>';
+
+  if(!mems.length){
+    h+='<div class="empty" style="padding:28px 10px"><div class="big">🧠</div><p>记忆库还是空的，等 AI 出去逛一趟就有了</p></div>';
+  }
+  var memShow=S.memShowAll?mems:mems.slice(0,3);
+  for(var i=0;i<memShow.length;i++){
+    var mm=memShow[i];
+    var imp=Math.max(0,Math.min(1,Number(mm.importance)||0));
+    var stage=mm.stage||'fresh';
+    var stCls=stage==='compressed'?'compressed':(imp<0.25?'danger':'fresh');
+    var stTxt=stage==='compressed'?'已模糊':(imp<0.25?'快忘了':'清晰');
+    h+='<div class="mem">';
+    h+='<div class="mh"><span>'+esc(mm.date||'')+' '+esc(mm.time||'')+'</span>'
+      +platBadge(mm.platform)+'<span class="kw">「'+esc(mm.title||mm.keyword||'')+'」</span>'
+      +'<span class="sp"></span><span class="state '+stCls+'">'+stTxt+'</span>'
+      +((mm.content||mm.summary||mm.impression||'').length>90?('<span class="fold" data-act="mem-fold" data-k="'+esc(mm.id)+'">▾</span>'):'')
+      +'</div>';
+    var txt=mm.content||mm.summary||mm.impression||'';
+    var longTxt=(txt||'').length>90;
+  h+='<div class="txt'+(stage==='compressed'?' blur':'')+(longTxt?' clamped':'')+'" data-id="'+esc(mm.id)+'">'+esc(txt)+'</div>';
+    if(mm.items_brief) h+='<div class="muted" style="margin-top:5px">看过：'+esc(mm.items_brief)+'</div>';
+    h+='<div class="mt"><span>重要度</span><span class="imp"><i style="width:'+Math.round(imp*100)+'%"></i></span>'
+      +'<span>'+imp.toFixed(2)+'</span>'
+      +'<span>记起 '+(mm.recall_count||0)+' 次</span>'
+      +(!keep?'<b data-act="del-mem" data-id="'+esc(mm.id)+'" style="cursor:pointer;color:#C0392B">删</b>':'')
+      +'</div>';
+    h+='</div>';
+  }
+  if(mems.length>3){
+    h+='<div style="margin-top:11px"><button class="btn ghost wide" data-act="mem-show-all">'+(S.memShowAll?'收起，只看最近 3 条':('还有 '+(mems.length-3)+' 条 · 看全部'))+'</button></div>';
+  }
+  h+='</div>';
+  return h;
+}
+
+/* ============ 存档页 ============ */
+function baseDirOf(){
+  var b=S.baseDir||'/storage/emulated/0/Download/Operit/闲逛手记/';
+  if(b.charAt(b.length-1)!=='/') b+='/';
+  return b;
+}
+function fullOf(p){
+  if(!p) return '';
+  var f=String(p.data_file||'data.json');
+  if(f.charAt(0)==='/') return f;
+  return baseDirOf()+f;
+}
+function shortOf(path){
+  var b=baseDirOf();
+  var s=String(path||'');
+  return s.indexOf(b)===0?s.slice(b.length):s;
+}
+/* 注册表不是手记——指着 profiles.json 的本子都是坏账，见到就拔。
+   三种漏网全堵上：手滑写成 datafile、名字就叫 profiles、路径写成绝对。 */
+function isRegFile(p){
+  if(!p) return false;
+  var raw=(p.data_file!==undefined&&p.data_file!==null&&String(p.data_file)!=='')
+    ? p.data_file
+    : (p.datafile!==undefined?p.datafile:(p.dataFile!==undefined?p.dataFile:''));
+  var s=String(raw||'').trim();
+  var full=s.charAt(0)==='/'?s:(baseDirOf()+s);
+  if(full===baseDirOf()+'profiles.json') return true;
+  var n=String(p.name||'').trim().toLowerCase();
+  if(n==='profiles'||n==='profiles.json') return true;
+  return false;
+}
+function sanitizeRegistry(){
+  var reg=S.registry;
+  if(!reg||!reg.profiles||!reg.profiles.length) return false;
+  var keep=[],drop=0;
+  for(var i=0;i<reg.profiles.length;i++){
+    if(isRegFile(reg.profiles[i])){ drop++; continue; }
+    keep.push(reg.profiles[i]);
+  }
+  if(!drop) return false;
+  if(!keep.length){
+    keep=[{id:'default',name:'默认手记',card_id:'',card_name:'',persona:'',
+      data_file:'data.json',created_at:Date.now(),note:''}];
+  }
+  reg.profiles=keep;
+  var okAct=false;
+  for(var j=0;j<keep.length;j++){ if(keep[j].id===reg.active){ okAct=true; break; } }
+  if(!okAct) reg.active=keep[0].id;
+  return true;
+}
+function vaultMain(){
+  var reg=S.registry||{profiles:[]};
+  var h='';
+
+  h+='<div class="sec-h"><span class="bar"></span>手记存档<span class="sp"></span>'
+    +'<button class="btn sm ghost" data-act="add-pf">+ 新起一本</button></div>';
+  h+='<div class="hint" style="margin:-4px 0 9px">一个角色卡一本手记。切到哪本，工作流之后读写的就都是哪本。</div>';
+
+  for(var i=0;i<reg.profiles.length;i++){
+    var p=reg.profiles[i];
+    if(isRegFile(p)) continue;
+    var on=p.id===reg.active;
+    var editing=S.vaultEdit===p.id;
+    h+='<div class="pf'+(on?' on':'')+'">';
+    h+='<div class="n">'+esc(p.name||'未命名')+(on?'<span class="cur">当前</span>':'')+'</div>';
+    h+='<div class="p">角色卡：'+esc(p.card_name||'（没绑）')+'<br>文件：'+esc(p.data_file||'')+'</div>';
+    if(String(p.data_file||'')==='profiles.json') h+='<div class="p" style="color:#C0392B">⚠ 这本指着注册表（profiles.json）——出门逛会把档写坏。点「改」，把数据文件路径换个名字。</div>';
+    if(editing){
+      h+='<div class="editbox" data-edit="'+esc(p.id)+'">';
+      h+='<label class="f">这本叫什么</label><input type="text" data-e="name" value="'+esc(p.name||'')+'" />';
+      h+='<label class="f">绑哪个角色卡</label><input type="text" data-e="card_name" value="'+esc(p.card_name||'')+'" placeholder="写角色卡名，或从下面点" />';
+      if(S.cards&&S.cards.length){
+        h+='<div class="chips wrapx" style="margin-top:6px">';
+        for(var c=0;c<S.cards.length;c++){
+          h+='<span class="chip" data-act="pick-card" data-k="'+esc(p.id)+'" data-v="'+esc(S.cards[c].name)+'">'+esc(S.cards[c].name)+'</span>';
+        }
+        h+='</div>';
+      }
+      h+='<label class="f">人格提示（出门逛时照这个口吻）</label>';
+      h+='<textarea rows="3" data-e="persona" placeholder="比如：话少，爱看旧东西，用词偏冷。">'+esc(p.persona||'')+'</textarea>';
+      h+='<label class="f">数据文件路径</label><input type="text" data-e="data_file" value="'+esc(p.data_file||'')+'" />';
+      h+='<div class="hint">路径可以填相对的（相对 闲逛手记/），也可以填绝对的。换路径 = 换一本账。</div>';
+      h+='<div class="row" style="margin-top:10px;gap:8px">';
+      h+='<button class="btn sm pri" data-act="save-pf" data-k="'+esc(p.id)+'">保存</button>';
+      h+='<button class="btn sm ghost" data-act="edit-pf" data-k="'+esc(p.id)+'">取消</button>';
+      h+='</div>';
+      h+='</div>';
+    }else{
+      if(p.persona) h+='<div class="p" style="margin-top:6px">口吻：'+esc(p.persona)+'</div>';
+      h+='<div class="row" style="margin-top:10px;gap:8px">';
+      if(!on) h+='<button class="btn sm pri" data-act="use-pf" data-k="'+esc(p.id)+'">用这本</button>';
+      h+='<button class="btn sm ghost" data-act="edit-pf" data-k="'+esc(p.id)+'">改</button>';
+      if(reg.profiles.length>1) h+='<button class="btn sm danger" data-act="del-pf" data-k="'+esc(p.id)+'">删</button>';
+      h+='</div>';
+    }
+    h+='</div>';
+  }
+
+  // 切换已有文件——折叠，跟「新起一本」分开
+  h+='<div class="card">';
+  h+='<div class="row sb" data-act="toggle-pick" style="cursor:pointer;margin:0">'
+    +'<div class="row"><span class="bar"></span><b style="font-size:13.5px">切换已有文件</b></div>'
+    +'<span class="arrow" style="'+(S.pickOpen?'transform:rotate(180deg)':'')+'">▾</span></div>';
+  h+='<div class="hint" style="margin:6px 0 0">从 闲逛手记/ 里已经有的 .json 里挑一本接上——不新建、不动它原来记下的东西。</div>';
+  if(S.pickOpen){
+    var fl=S.pickFiles;
+    if(fl===null||fl===undefined){
+      h+='<div class="muted" style="margin-top:10px">正在翻目录…</div>';
+    }else if(!fl.length){
+      h+='<div class="muted" style="margin-top:10px">'+esc(S.pickErr||'闲逛手记/ 下没找到 .json')+'</div>';
+    }else{
+      h+='<div class="filelist">';
+      for(var q=0;q<fl.length;q++){
+        var f=fl[q];
+        var owner=null,isCur=false;
+        for(var z=0;z<reg.profiles.length;z++){
+          if(fullOf(reg.profiles[z])!==f.path) continue;
+          owner=reg.profiles[z];
+          if(reg.profiles[z].id===reg.active) isCur=true;
+          break;
+        }
+        var isReg=(f.path===baseDirOf()+'profiles.json');
+        var canDel=(!isReg&&!isCur);
+        var badge='';
+        if(isReg) badge=' <span class="tagx reg">注册表</span>';
+        else if(isCur) badge=' <span class="tagx cur">在用</span>';
+        else if(owner) badge=' <span class="tagx bound">已绑 '+esc(owner.name||'未命名')+'</span>';
+        h+='<div class="swipe" data-path="'+esc(f.path)+'">';
+        // 藏在后面的动作——左滑才露出来。在用的那本、注册表，都不给删。
+        h+='<div class="acts">'
+          +(canDel?'<div class="a del" data-act="del-file" data-k="'+esc(f.path)+'" data-name="'+esc(f.name)+'">删除</div>':'')
+          +'</div>';
+        h+='<div class="slider"><div class="fn">'+esc(f.name)+badge+'</div>'
+          +'<div class="fs">'+fmtStamp(f.mtime)+' · '+fmtSize(f.size)+'</div>'
+          +'<div class="row" style="gap:7px;margin-top:5px;flex-wrap:wrap">'
+          +(isReg?'':'<button class="btn sm ghost" data-act="rename-file" data-k="'+esc(f.path)+'" data-name="'+esc(f.name)+'">改名</button>')
+          +((!isReg&&!isCur)?'<button class="btn sm pri" data-act="use-file" data-k="'+esc(f.rel)+'">用这本</button>':'')
+          +'</div>'
+          +'</div>';
+        h+='</div>';
+      }
+      h+='</div>';
+      h+='<div class="swipe-hintline">左滑一行能删掉它；在用的那本和注册表动不得。删除时可选择：留痕删（先抄进 backup/）或直接删。</div>';
+    }
+  }
+  h+='</div>';
+
+  // 备份
+  h+='<div class="card">';
+  h+='<div class="sec-h" style="margin:0 0 4px"><span class="bar"></span>导出</div>';
+  h+='<div class="hint" style="margin-top:0">导出到 闲逛手记/backup/ 里，可随时查看。</div>';
+  h+='<div style="margin-top:9px"><button class="btn pri wide" data-act="backup-all">全量导出一份</button></div>';
+  h+='<div class="divider"></div>';
+  h+='<div style="font-size:12.5px;font-weight:700">分块导出</div>';
+  h+='<div class="chips wrapx" style="margin-top:7px">';
+  for(var b=0;b<BLOCKS.length;b++){
+    var sel=(S.expBlocks||[]).indexOf(BLOCKS[b].k)>=0;
+    h+='<span class="chip'+(sel?' on':'')+'" data-act="exp-block" data-v="'+BLOCKS[b].k+'">'+BLOCKS[b].label+'</span>';
+  }
+  h+='</div>';
+  h+='<div style="margin-top:9px"><button class="btn ghost wide" data-act="backup-blocks">只导出勾选的</button></div>';
+  h+='</div>';
+
+  // 导入
+  h+='<div class="card">';
+  h+='<div class="sec-h" style="margin:0 0 4px"><span class="bar"></span>导入</div>';
+  h+='<div class="hint" style="margin-top:0">导入前会自动留一份备份，覆盖出错还能退回。</div>';
+  h+='<div class="chips wrapx" style="margin-top:8px">';
+  [['replace','整块覆盖'],['merge','只补新的']].forEach(function(m){
+    h+='<span class="chip'+((S.impMode||'replace')===m[0]?' on':'')+'" data-act="imp-mode" data-v="'+m[0]+'">'+m[1]+'</span>';
+  });
+  h+='</div>';
+  h+='<div class="chips wrapx" style="margin-top:7px">';
+  for(var b2=0;b2<BLOCKS.length;b2++){
+    var sel2=(S.impBlocks||[]).indexOf(BLOCKS[b2].k)>=0;
+    h+='<span class="chip'+(sel2?' on':'')+'" data-act="imp-block" data-v="'+BLOCKS[b2].k+'">'+BLOCKS[b2].label+'</span>';
+  }
+  h+='</div>';
+  h+='<div class="hint">不勾就是全量。</div>';
+  h+='<label class="f">从文件导入（填完整路径）</label>';
+  h+='<div class="row"><input type="text" id="imp_path" placeholder=".../闲逛手记/backup/xg_xxx.json" />'
+    +'<button class="btn sm pri" data-act="imp-path">读入</button></div>';
+  h+='<div class="row" style="margin-top:7px;gap:7px">'
+    +'<button class="btn sm ghost" data-act="imp-scan" data-v="backup">扫 backup</button>'
+    +'<button class="btn sm ghost" data-act="imp-scan" data-v="download">扫 Download</button></div>';
+  h+='<div id="imp_files"></div>';
+  h+='<label class="f" style="margin-top:12px">或从已有备份里挑一份</label>';
+  var bks=S.backups||[];
+  if(!bks.length){
+    h+='<div class="muted" style="margin-top:8px">还没有备份文件。</div>';
+  }else{
+    for(var k=0;k<bks.length;k++){
+      var bk=bks[k];
+      h+='<div class="row sb" style="padding:9px 0;border-top:1px solid var(--line)">';
+      h+='<div style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:600;word-break:break-all">'+esc(bk.name)+'</div>'
+        +'<div class="muted">'+fmtStamp(bk.mtime)+' · '+fmtSize(bk.size)+'</div></div>';
+      h+='<button class="btn sm pri" data-act="do-import" data-k="'+esc(bk.path)+'">导入</button>'
+        +'<button class="btn sm danger" data-act="del-backup" data-k="'+esc(bk.path)+'">删</button>';
+      h+='</div>';
+    }
+  }
+  h+='</div>';
+  return h;
+}
+
+/* ============ 渲染 ============ */
+function render(){
+  var app=$('app');
+  if(!S.data){ app.innerHTML='<div class="loading">读不到账本</div>'; return; }
+  var sch=S.data.schedule||{};
+  var onPlats=(S.data.platforms||[]).filter(function(p){return p.account&&p.account.online;});
+  var onlineTxt=onPlats.length?('在线：'+onPlats.map(function(p){return p.name;}).join('、')):'未登录 · 以路人身份逛';
+  var recN=(S.data.records||[]).length;
+
+  var h='';
+  h+='<div class="top"><div class="logo">📓</div><h1>闲逛手记</h1>'
+    +'<div class="iconbtn" data-act="reload">⟳</div></div>';
+  h+='<div class="subline"><span class="pill">'+esc(S.profile?S.profile.name:'默认')+'</span>'
+    +esc(onlineTxt)+' · 共 '+recN+' 笔'
+    +'</div>';
+
+  /* 页面版本跟桥对不上 = 您眼前这份是旧缓存。直说，别让您对着老界面找毛病。 */
+  if(S.bridgeVer && PAGE_VER && S.bridgeVer!==PAGE_VER){
+    h+='<div class="stale">⚠ 当前这份页面是旧的（页 '+esc(PAGE_VER)+' / 桥 '+esc(S.bridgeVer)
+      +'）。把侧栏整个关掉、再重开一次；不行就重启 Operit。只点右上那个刷新键不够。</div>';
+  }
+
+  /* 一行小字：桥版本 + 桥递参数的形态。出问题时这一行就是证据。 */
+  h+='<div class="bridge-line">桥 '+esc(S.bridgeVer||'?')+' · 页 '+esc(PAGE_VER)
+    +(S.bridgeShape?(' · 参数 '+esc(S.bridgeShape)):'')+'</div>';
+
+  h+='<div class="tabs">';
+  [['notes','手记'],['trail','足迹'],['stats','统计'],['memory','记忆'],['settings','设置'],['vault','存档'],['wf','工作流']].forEach(function(t){
+    h+='<span class="tab'+(S.tab===t[0]?' on':'')+'" data-act="tab" data-v="'+t[0]+'">'+t[1]+'</span>';
+  });
+  h+='</div>';
+
+  h+='<div class="wrap">';
+  if(S.tab==='settings') h+=settingsMain();
+  else if(S.tab==='trail') h+=trailMain();
+  else if(S.tab==='stats') h+=statsMain();
+  else if(S.tab==='memory') h+=memoryMain();
+  else if(S.tab==='vault') h+=vaultMain();
+  else if(S.tab==='wf') h+=wfMain();
+  else h+=notesMain();
+  h+='</div>';
+
+  app.innerHTML=h;
+  bindInputs();
+  bindSwipes();
+  applyChartPick();
+  markScrollables();
+}
+
+/* ============ 局部刷新（不打乱输入焦点） ============ */
+function rerenderNotes(){
+  if(S.tab!=='notes') { render(); return; }
+  var box=$('notelist');
+  if(!box){ render(); return; }
+  box.innerHTML=notesList();
+  var cb=$('calbox'); if(cb) cb.innerHTML=calendarHTML();
+  var bar=$('notebar');
+  if(bar) bar.innerHTML=chipsHTML();
+  setTimeout(fitAllSwipes,90);
+  var fh=$('filterhint');
+  if(fh) fh.innerHTML=filterHint();
+  bindInputs();
+  markScrollables();
+}
+
+/* ============ 图表点选（只动 DOM，不整页重绘，滚动条不跳） ============ */
+function applyChartPick(){
+  var pick=(typeof S.chartPick==='number')?S.chartPick:-1;
+  var segs=document.querySelectorAll('.chart .seg');
+  for(var i=0;i<segs.length;i++){
+    var idx=Number(segs[i].getAttribute('data-v'));
+    var on=(idx===pick);
+    segs[i].classList.toggle('on',on);
+    segs[i].classList.toggle('dim',pick>=0&&!on);
+  }
+  var rows=document.querySelectorAll('.bar-wrap .bar-row');
+  for(var j=0;j<rows.length;j++){
+    var jdx=Number(rows[j].getAttribute('data-v'));
+    var jon=(jdx===pick);
+    rows[j].classList.toggle('on',jon);
+    rows[j].classList.toggle('dim',pick>=0&&!jon);
+  }
+  var lgs=document.querySelectorAll('.legend .lg');
+  for(var m=0;m<lgs.length;m++){
+    lgs[m].classList.toggle('on',Number(lgs[m].getAttribute('data-i'))===pick);
+  }
+  var tl=$('tmark-line'), td=$('tmark-dot');
+  if(tl&&td){
+    var d0=window._chartData&&window._chartData[pick];
+    if(pick>=0&&d0&&d0.x!==undefined){
+      tl.setAttribute('x1',d0.x); tl.setAttribute('x2',d0.x); tl.setAttribute('opacity','0.7');
+      td.setAttribute('cx',d0.x); td.setAttribute('cy',d0.y); td.setAttribute('opacity','1');
+    }else{
+      tl.setAttribute('opacity','0'); td.setAttribute('opacity','0');
+    }
+  }
+  var tip=$('charttip');
+  if(tip){
+    var d=window._chartData&&window._chartData[pick];
+    if(pick<0||!d){ tip.style.display='none'; tip.innerHTML=''; }
+    else{
+      tip.style.display='block';
+      tip.innerHTML=(d.pct===null||d.pct===undefined)
+        ? ('<b>'+esc(d.tag)+'</b> · '+esc(String(d.sub||(d.count+' 条'))))
+        : ('<b>'+esc(d.tag)+'</b> · '+d.count+' 条 · 占 '+d.pct+'%');
+    }
+  }
+}
+
+/* ============ 横滑提示：能滑的行给个明示，滑过就撤 ============ */
+function markScrollables(){
+  var rows=document.querySelectorAll('.chips');
+  for(var i=0;i<rows.length;i++){
+    var box=rows[i];
+    if(box.classList.contains('wrapx')) continue;
+    var over=(box.scrollWidth-box.clientWidth)>6;
+    box.classList.toggle('scrollable',over);
+    var atEnd=(box.scrollLeft+box.clientWidth)>=(box.scrollWidth-4);
+    box.classList.toggle('at-end',atEnd);
+    if(over&&!box._nudge){
+      var pn=box.parentNode;
+      var flexy=false;
+      try{ flexy=pn&&window.getComputedStyle(pn).display==='flex'; }catch(e){}
+      if(!flexy){
+        var s=document.createElement('div');
+        s.className='swipe-hint';
+        s.innerHTML='<b>⇄</b> 左右滑，还有更多';
+        pn.insertBefore(s,box.nextSibling);
+        box._nudge=s;
+        box.addEventListener('scroll',function(){
+          if(this._nudge) this._nudge.classList.remove('gone');
+        },{passive:true});
+      }
+    }else if(!over&&box._nudge){
+      box._nudge.classList.remove('gone');
+    }
+  }
+}
+
+/* ============ 左滑：给文件行挂手势 ============ */
+/* 只滑一行；滑开别的行，先前那行自动收回去 */
+function closeSwipes(except){
+  eachEl('.swipe',function(row){
+    if(row===except) return;
+    row.classList.remove('open');
+    var sl=row.querySelector('.slider');
+    if(sl) sl.style.transform='';
+  });
+}
+function bindSwipes(){
+  eachEl('.swipe',function(row){
+    if(row._sw) return;
+    row._sw=true;
+    var slider=row.querySelector('.slider');
+    if(!slider) return;
+    var acts=row.querySelectorAll('.acts .a');
+    var W=((acts&&acts.length)||0)*62;   // 露出来的宽度，按动作个数算
+    if(!W) return;                       // 这行没动作（在用的 / 注册表），不挂手势
+    var sx=0,sy=0,dx=0,dragging=false,decided=false,horiz=false;
+    row.addEventListener('touchstart',function(e){
+      if(!e.touches||!e.touches.length) return;
+      var t=e.touches[0];
+      sx=t.clientX; sy=t.clientY; dx=0; dragging=true; decided=false; horiz=false;
+      slider.style.transition='none';
+    },{passive:true});
+    row.addEventListener('touchmove',function(e){
+      if(!dragging) return;
+      var t=e.touches[0];
+      dx=t.clientX-sx;
+      var dy=t.clientY-sy;
+      if(!decided){
+        if(Math.abs(dx)>7||Math.abs(dy)>7){ decided=true; horiz=Math.abs(dx)>Math.abs(dy); }
+        else return;
+      }
+      if(!horiz) return;                 // 竖着滑就让页面滚，别抢
+      if(e.cancelable) e.preventDefault();
+      var base=row.classList.contains('open')?-W:0;
+      var x=base+dx;
+      if(x>0) x=0;
+      if(x<-W-18) x=-W-18;
+      slider.style.transform='translateX('+x+'px)';
+    },{passive:false});
+    function end(){
+      if(!dragging) return;
+      dragging=false;
+      slider.style.transition='';
+      if(!horiz){ slider.style.transform=''; return; }
+      var base=row.classList.contains('open')?-W:0;
+      var x=base+dx;
+      if(x<-W/2){ closeSwipes(row); row.classList.add('open'); slider.style.transform='translateX(-'+W+'px)'; }
+      else { row.classList.remove('open'); slider.style.transform=''; }
+    }
+    row.addEventListener('touchend',end);
+    row.addEventListener('touchcancel',end);
+  });
+}
+
+/* ============ 事件 ============ */
+function bindInputs(){
+  // 搜索
+  var q=$('q');
+  if(q && !q._bound){
+    q._bound=true;
+    q.addEventListener('input',function(){
+      S.q=this.value;
+      var box=$('searchbox');
+      if(box){ if(S.q) box.classList.add('has'); else box.classList.remove('has'); }
+      clearTimeout(window._qt);
+      window._qt=setTimeout(rerenderNotes,180);
+    });
+  }
+  var nt=$('newtag');
+  if(nt) nt.addEventListener('input',function(){ S.newTag=this.value; });
+  var bt=$('blocktag');
+  if(bt) bt.addEventListener('input',function(){ S.blockDraft=this.value; });
+
+  // 数字 / 文本
+  // 侧边栏改完必须实时生效：schedule 的开关 / 间隔 / 时间窗同步进工作流
+  window.syncSched=function(){
+    try{
+      var s=S.data.schedule||{};
+      call('syncSchedule',[JSON.stringify({
+        enabled: s.enabled!==false,
+        hours: s.interval_hours||6,
+        start: (s.active_start==null?9:s.active_start),
+        end: (s.active_end==null?23:s.active_end)
+      })]);
+    }catch(e){}
+  };
+  // 定时那四个数只在「确定」时落盘：边打边存会反复唤醒工作流
+  eachEl('[data-num]',function(el){
+    el.addEventListener('input',function(){
+      var k=this.getAttribute('data-num');
+      var v=Number(this.value);
+      if(isNaN(v)) return;
+      if(!S.schedDraft) S.schedDraft={};
+      S.schedDraft[k]=v;
+      var b=document.querySelector('[data-act="sched-ok"]');
+      if(b) b.textContent='确定（有改动没存）';
+    });
+  });
+  eachEl('[data-txt]',function(el){
+    el.addEventListener('input',function(){
+      var k=this.getAttribute('data-txt');
+      if(!S.schedDraft) S.schedDraft={};
+      S.schedDraft[k]=this.value;
+      var b=document.querySelector('[data-act="sched-ok"]');
+      if(b) b.textContent='确定（有改动没存）';
+    });
+  });
+  eachEl('[data-sp="bias"]',function(el){
+    el.addEventListener('input',function(){
+      var v=document.getElementById('spBiasV');
+      if(v) v.textContent=this.value+'%';
+    });
+  });
+  eachEl('[data-wf]',function(el){
+    el.addEventListener('input',function(){
+      var k=this.getAttribute('data-wf');
+      if(!S.wfDraft) S.wfDraft={};
+      S.wfDraft[k]=this.value;
+    });
+  });
+  eachEl('[data-note]',function(el){
+    el.addEventListener('input',function(){
+      var k=this.getAttribute('data-note');
+      S.data.preferences[k]=this.value; save();
+    });
+  });
+  eachEl('[data-plat]',function(el){
+    el.addEventListener('input',function(){
+      var i=Number(this.getAttribute('data-plat'));
+      var f=this.getAttribute('data-f');
+      if(S.data.platforms[i]){ S.data.platforms[i][f]=this.value; save(); }
+    });
+  });
+  eachEl('[data-acct]',function(el){
+    el.addEventListener('input',function(){
+      var i=Number(this.getAttribute('data-acct'));
+      var f=this.getAttribute('data-f');
+      if(S.data.platforms[i]){ S.data.platforms[i].account[f]=this.value; save(); }
+    });
+  });
+  eachEl('[data-utag]',function(el){
+    el.addEventListener('input',function(){
+      var i=Number(this.getAttribute('data-utag'));
+      if(S.data.preferences.user_tags[i]){ S.data.preferences.user_tags[i].tag=this.value; save(); }
+    });
+  });
+  // 存档那几栏不再「边打边存」——改成按「保存」一次性落盘。
+  // 边打边存既费桥调用，又会在重渲染时把没打完的字吞掉。
+  eachEl('[data-range]',function(el){
+    el.addEventListener('change',function(){
+      var k=this.getAttribute('data-range');
+      S.data.memory[k]=Number(this.value);
+      render();  /* 只改内存，不落盘；要点「保存设置」才存 */
+    });
+  });
+}
+
+/* ============ 存档：读编辑框、落盘 ============ */
+function collectEdit(id){
+  var box=null;
+  eachEl('[data-edit]',function(el){ if(el.getAttribute('data-edit')===id) box=el; });
+  if(!box) return null;
+  var out={id:id};
+  var els=box.querySelectorAll('[data-e]');
+  for(var i=0;i<els.length;i++) out[els[i].getAttribute('data-e')]=els[i].value;
+  return out;
+}
+
+function saveProfileEdit(id){
+  var t=collectEdit(id);
+  if(!t){ toast('没找到要存的东西'); return false; }
+  // 本地先改，界面立刻对得上
+  if(S.registry&&S.registry.profiles){
+    for(var i=0;i<S.registry.profiles.length;i++){
+      if(S.registry.profiles[i].id!==id) continue;
+      for(var k in t){ if(k!=='id') S.registry.profiles[i][k]=t[k]; }
+    }
+  }
+  var err='';
+  var r=null;
+  if(hasFn('saveRegistry')){
+    r=call('saveRegistry',[JSON.stringify(S.registry)]);
+    if(r&&r.success===false) err=r.error||'';
+  }
+  if(!r||r.success===false){
+    // 退路：单参 updateProfile（JSON 里带 id）
+    var r2=call('updateProfile',[JSON.stringify(t)]);
+    if(r2&&r2.success===false) err=r2.error||err;
+    if(!r2||r2.success===false){ toast('存不上：'+(err||'桥没通')); return false; }
+  }
+  S.vaultEdit=null;
+  if(loadAll()) render();
+  toast('存好了');
+  return true;
+}
+
+/* 删/改/切之后统一收尾：把「切换已有文件」那份缓存作废，重扫一遍。
+   上一版主卡那排删完只 render()，下面那份列表是缓存的，删掉的文件还挂着，
+   点「用这本」又把它登记回来——看着像删不掉，其实是缓存没作废。 */
+function refreshAfterFileChange(){
+  S.pickFiles=null; S.pickErr='';
+  if(S.pickOpen) loadPickFiles(); else render();
+}
+
+/* 这份文件到底还在不在磁盘上——「用这本」复活已删文件前的一道闸。
+   桥有 fileExists 就直问；没有就扫一遍目录兜底；都问不出来时放行（不拦路）。 */
+function fileExistsSync(rel){
+  var full=rel.charAt(0)==='/'?rel:(baseDirOf()+rel);
+  if(hasFn('fileExists')){
+    var r=call('fileExists',[full]);
+    if(r&&typeof r.exists==='boolean') return r.exists;
+  }
+  var dir=full.replace(/[^\/]+$/,'');
+  var r2=call('listJson',[dir]);
+  if(r2&&r2.files){
+    for(var i=0;i<r2.files.length;i++){ if(r2.files[i].path===full) return true; }
+    return false;
+  }
+  return true;
+}
+
+/* 折叠区：翻出 闲逛手记/ 下所有 .json */
+function loadPickFiles(){
+  S.pickFiles=null; S.pickErr='';
+  render();
+  var dir=baseDirOf();
+  var r=call('listJson',[dir]);
+  if(!r||r.success===false||!r.files){
+    S.pickFiles=[]; S.pickErr='翻不到目录：'+((r&&r.error)||'桥没通');
+    render(); return;
+  }
+  var out=[];
+  for(var i=0;i<r.files.length;i++){
+    var f=r.files[i];
+    // 注册表是系统件，不摆上台面
+    if(String(f.name).toLowerCase()==='profiles.json') continue;
+    out.push({name:f.name, path:f.path, rel:shortOf(f.path), size:f.size, mtime:f.mtime});
+  }
+  S.pickFiles=out;
+  render();
+}
+
+function useFile(rel){
+  var reg=S.registry||{profiles:[]};
+  var want=rel.charAt(0)==='/'?rel:(baseDirOf()+rel);
+  // 已经登记过的，直接切
+  for(var i=0;i<reg.profiles.length;i++){
+    if(fullOf(reg.profiles[i])===want){
+      var r=call('switchProfile',[reg.profiles[i].id]);
+      if(r&&r.success===false){ toast(r.error||'切不了'); return; }
+      if(loadAll()) render();
+      toast('已切到「'+(reg.profiles[i].name||rel)+'」');
+      return;
+    }
+  }
+  // 前端没认出来，先让桥按文件名/路径认一次（桥现在 id、文件名、路径、名字都认）
+  var rs=call('switchProfile',[rel]);
+  if(rs&&rs.success!==false){ if(loadAll()) render(); toast('已切到这本'); return; }
+  // 桥也认不出：先确认这份文件还在不在。不在就别登记——不然刚删掉的档
+  // 又被凭空复活一本，看着像删不掉，还能无限循环。
+  if(!fileExistsSync(rel)){
+    toast('这份文件已经不在了，列表已重新扫描');
+    loadAll(); refreshAfterFileChange();
+    return;
+  }
+  // 真的没登记过：登记一本，指到这个文件（不覆盖它）
+  var name=rel.replace(/\.json$/i,'');
+  var r2=call('addProfile',[JSON.stringify({name:name,data_file:rel})]);
+  if(!r2||r2.success===false){ toast('接不上：'+((r2&&r2.error)||'桥没通')); return; }
+  var r3=call('switchProfile',[r2.id]);
+  if(loadAll()) render();
+  toast('接上了：'+rel);
+}
+
+document.addEventListener('click',function(ev){
+  var el=ev.target.closest('[data-act]');
+  // 点到别处，把滑开的文件行收回去
+  try{ if(!ev.target.closest('.swipe')) closeSwipes(null); }catch(e0){}
+  if(!el) return;
+  var act=el.getAttribute('data-act');
+  var v=el.getAttribute('data-v');
+  var k=el.getAttribute('data-k');
+  if(k===null) k=el.getAttribute('data-id');
+
+  switch(act){
+    case 'tab': S.tab=v; render(); break;
+    case 'star-mode':
+      S.starMode=(S.starMode==='plain'?'star':'plain');
+      try{ localStorage.setItem('xg_star_mode',S.starMode); }catch(e){}
+      render(); break;
+    case 'star-tap':
+      S.starSel=(S.starSel===v?'':v); render(); break;
+    case 'wf-save':
+      (function(){
+        var ta=document.querySelector('textarea[data-wf="'+v+'"]');
+        var txt=ta?ta.value:'';
+        var r=call('saveWfPrompt',[JSON.stringify({id:v,message:txt})]);
+        if(S.wfPrompts){ for(var wi=0;wi<S.wfPrompts.length;wi++){ if(S.wfPrompts[wi].id===v) S.wfPrompts[wi].message=txt; } }
+        toast(r&&r.success===false?('存不上：'+(r.error||'')):'这段存好了，下一趟按新的走');
+      })();
+      break;
+    case 'act-group': S.actGroup=v; render(); break;
+    case 'wf-reload':
+      (function(){
+        var r=call('getWfPrompts',[]);
+        if(r&&r.success){ S.wfPrompts=r.prompts||[]; S.wfDraft={}; render(); toast('读到 '+(S.wfPrompts.length)+' 段'); }
+        else { toast(r&&r.pending?'再点一次，正在读':'读不到：'+((r&&r.error)||'?')); }
+      })();
+      break;
+    case 'p-open':
+      if(!S.pOpen) S.pOpen={};
+      S.pOpen[v]=(S.pOpen[v]?false:true);
+      render(); break;
+    case 'sched-ok':
+      (function(){
+        var d=S.schedDraft||{};
+        var keys=['interval_hours','max_items_per_trip','active_start','active_end'];
+        if(!S.data.schedule) S.data.schedule={};
+        var s=S.data.schedule, changed=false, touched=false;
+        for(var i=0;i<keys.length;i++){
+          var k=keys[i];
+          if(d[k]===undefined) continue;
+          var v=Number(d[k]);
+          if(isNaN(v)) continue;
+          touched=true;
+          if(k==='interval_hours'||k==='max_items_per_trip'){ if(v<1) v=1; }
+          else { v=Math.max(0,Math.min(23,Math.round(v))); }
+          if(s[k]!==v){ s[k]=v; changed=true; }
+        }
+        var tEl=document.querySelector('[data-txt="chat_title"]');
+        if(tEl){
+          var tv=String(tEl.value||'').replace(/^\s+|\s+$/g,'');
+          if(!tv) tv='AI 和用户的日常';
+          if(s.chat_title!==tv){ s.chat_title=tv; changed=true; touched=true; }
+        }
+        S.schedDraft={};
+        if(touched) save();
+        if(window.syncSched) window.syncSched();
+        render();
+        toast(touched?('存好了：每 '+s.interval_hours+' 小时，'+s.active_start+'–'+s.active_end+' 点之间 · 投到「'+(s.chat_title||'')+'」'):'没改动，只同步了一遍');
+      })();
+      break;
+    case 'sp-save':
+      (function(){
+        var capEl=document.querySelector('[data-sp="cap"]');
+        var biasEl=document.querySelector('[data-sp="bias"]');
+        var cap=parseInt(capEl?capEl.value:'3',10); if(isNaN(cap)||cap<0)cap=3;
+        var bias=parseInt(biasEl?biasEl.value:'50',10); if(isNaN(bias))bias=50;
+        var r=call('saveSpeechPrefs',[JSON.stringify({cap:cap,bias:bias})]);
+        if(!r){ toast('桥里没有保存口——插件得重启一次才认'); return; }
+        if(r.success===false){ toast('存不上：'+(r.error||'?')); return; }
+        if(S.data){S.data.preferences=S.data.preferences||{};S.data.preferences.speech_cap=r.cap;S.data.preferences.dive_bias=r.bias;}
+        toast('存好了：上限 '+r.cap+' · 倾向 '+r.bias+'%');
+      })();
+      break;
+    case 'wf-run':
+      (function(){
+        var r=call('triggerWf',[]);
+        toast(r&&r.success===false?('跑不动：'+(r.error||'')):'叫它出门了——过会儿看账本');
+      })();
+      break;
+    case 'reload':
+      if(loadAll()){ render(); toast('账本已刷新'); }
+      break;
+
+    /* 手记 */
+    case 'toggle-rec':
+      S.openRec[k]=!S.openRec[k];
+      rerenderNotes();
+      setTimeout(function(){ var w=document.querySelector('.swipe-wrap[data-swipe="'+k+'"]'); if(w) fitSwipe(w); },60);
+      break;
+    case 'flip':
+      var fw=document.querySelector('.swipe-wrap[data-swipe="'+k+'"]');
+      if(fw){ flipCard(fw, !fw.classList.contains('on-diary')); }
+      break;
+    case 'cal-prev': S.calM=(S.calM===undefined||S.calM===null)?(new Date()).getMonth():S.calM; if(S.calM===0){S.calM=11;S.calY=(S.calY||(new Date()).getFullYear())-1;}else{S.calM--;} S.calY=S.calY||(new Date()).getFullYear(); rerenderNotes(); break;
+    case 'cal-next': S.calM=(S.calM===undefined||S.calM===null)?(new Date()).getMonth():S.calM; if(S.calM===11){S.calM=0;S.calY=(S.calY||(new Date()).getFullYear())+1;}else{S.calM++;} S.calY=S.calY||(new Date()).getFullYear(); rerenderNotes(); break;
+    case 'cal-pick': S.dateFilter=v; S.showAll=false; rerenderNotes(); break;
+    case 'cal-clear': S.dateFilter=''; rerenderNotes(); break;
+    case 'show-all': S.showAll=true; rerenderNotes(); break;
+    case 'show-less': S.showAll=false; rerenderNotes(); break;
+    case 'range': S.range=v; rerenderNotes(); break;
+    case 'sort': S.sort=v; rerenderNotes(); break;
+    case 'clear-q': S.q=''; var qi=$('q'); if(qi){qi.value='';} var sb=$('searchbox'); if(sb){sb.classList.remove('has');} rerenderNotes(); break;
+    case 'urge':
+      S.data.manual_request={ts:Date.now(),by:'user'};
+      save(); render(); toast('记下了——下次醒来，第一件事就是出门逛'); break;
+
+    /* 链接 */
+    case 'open':
+      var r1=call('openUrl',[el.getAttribute('data-url')]);
+      if(r1&&r1.success===false) toast('打不开：'+(r1.error||''));
+      break;
+    case 'copy':
+      var r2=call('copyText',[el.getAttribute('data-txt')]);
+      toast(r2&&r2.success===false?('复制失败：'+r2.error):'复制好了'); break;
+
+    /* 设置 */
+    case 't-sched':
+      S.data.schedule.enabled=!S.data.schedule.enabled; save(); if(window.syncSched) window.syncSched(); render(); break;
+    case 't-plat-en':
+      (function(){
+        var i=Number(k);
+        if(!S.data.platforms[i]) return;
+        S.data.platforms[i].enabled=!S.data.platforms[i].enabled;
+        save(); render();
+      })();
+      break;
+    case 't-perm':
+      (function(){
+        var p=k.split('|'); var i=Number(p[0]), pk=p[1];
+        if(!S.data.platforms[i]) return;
+        if(!S.data.platforms[i].permissions) S.data.platforms[i].permissions={};
+        S.data.platforms[i].permissions[pk]=!S.data.platforms[i].permissions[pk];
+        save(); render();
+      })();
+      break;
+    case 't-online':
+      (function(){
+        var i=Number(k);
+        if(!S.data.platforms[i]) return;
+        var a=S.data.platforms[i].account;
+        a.online=!a.online;
+        if(a.online) a.login_at=Date.now(); else a.logout_at=Date.now();
+        save(); render();
+      })();
+      break;
+    case 'toggle-plat': S.openPlat[k]=!S.openPlat[k]; render(); break;
+    case 'acct-mode':
+      (function(){
+        var p=k.split('|'); var i=Number(p[0]);
+        if(!S.data.platforms[i]) return;
+        S.data.platforms[i].account.mode=p[1];
+        save(); render();
+      })();
+      break;
+    case 'add-plat':
+      S.data.platforms.push({
+        id:'custom_'+Date.now(), name:'新平台', enabled:true, adapter:'', homepage:'', owner_note:'',
+        permissions:{like:false,dislike:false,comment:false,delete_comment:false,favorite:false,unfavorite:false,dm_reply:false,public_reply:false,follow:false,unfollow:false,publish:false},
+        account:{mode:'guest',login_url:'',username:'',password:'',cookie:'',token:'',token_note:'',online:false,login_at:0,logout_at:0}
+      });
+      save(); render(); toast('加了个新平台，点开给它改个名字'); break;
+    case 'del-plat':
+      S.pendingDelete={kind:'plat',idx:Number(k)};
+      confirmModal('移除这个平台？','移除后它下面的权限和账号设置一起没了。账本里已经记下的手记不受影响。',function(){
+        S.data.platforms.splice(Number(k),1);
+        save(); render(); toast('平台已移除');
+      });
+      break;
+
+    /* 统计 */
+    case 'chart': S.chart=v; S.chartPick=-1; render(); break;
+    case 'tag-all': S.tagAll=!S.tagAll; render(); break;
+    case 'chartrange': S.chartRange=v; S.chartPick=-1; render(); break;
+    case 'chartpick':
+      (function(){
+        var ci=Number(v);
+        S.chartPick=(S.chartPick===ci?-1:ci);
+        applyChartPick();
+      })();
+      break;
+    case 'add-utag':
+      var t=(S.newTag||'').trim();
+      if(!t){ toast('先写个标签名'); break; }
+      S.data.preferences.user_tags.push({tag:t,weight:1});
+      S.newTag=''; save(); render(); toast('加好了：'+t); break;
+    case 'del-utag':
+      S.data.preferences.user_tags.splice(Number(k),1); save(); render(); break;
+    case 'add-btag':
+      var tb=(S.blockDraft||'').trim();
+      if(!tb){ toast('先写个标签名'); break; }
+      if(S.data.preferences.blocked_tags.indexOf(tb)<0) S.data.preferences.blocked_tags.push(tb);
+      S.blockDraft=''; save(); render(); toast('拉黑了：'+tb); break;
+    case 'del-btag':
+      S.data.preferences.blocked_tags.splice(Number(k),1); save(); render(); break;
+
+    /* 记忆 */
+    case 'mem-mode':
+      S.data.memory.mode=v; save(); render();
+      toast(v==='keep'?'切到永不遗忘——以后不删了':'切回遗忘模式'); break;
+    case 't-mem':
+      S.data.memory[k]=!S.data.memory[k]; save(); render(); break;
+    case 'mem-save': save(); toast('记忆设置已保存'); break;
+    case 'mem-reset':
+      S.data.memory.retention_days=7; S.data.memory.blur=0.3;
+      S.data.memory.compress=true; S.data.memory.compress_threshold=0.45;
+      S.data.memory.forget_threshold=0.15; S.data.memory.auto_tick=true;
+      save(); render(); toast('已恢复默认');
+      break;
+    case 'mem-fold':
+      var ft=document.querySelector('.mem .txt[data-id="'+k+'"]');
+      var fa=document.querySelector('.mem .fold[data-k="'+k+'"]');
+      if(ft){ ft.classList.toggle('clamped'); if(fa) fa.textContent=ft.classList.contains('clamped')?'▾':'▴'; }
+      break;
+    case 'mem-show-all': S.memShowAll=!S.memShowAll; render(); break;
+    case 'rule-reset': S.data.preferences.diary_rule=''; save(); render(); toast('已恢复默认规则'); break;
+    case 'mem-tick':
+      var mr=call('memoryTick');
+      if(mr&&mr.success!==false){
+        toast('走完了：'+mr.total+' 条，待压缩 '+mr.to_compress+'，待遗忘 '+mr.to_forget);
+        if(loadAll()) render();
+      }else toast('走不动：'+((mr&&mr.error)||''));
+      break;
+    case 'mem-import':
+      var ir=call('importMemory',[JSON.stringify({force:false})]);
+      if(!ir||ir.success===false){ toast('开不动：'+((ir&&ir.error)||'')); break; }
+      toast('开始倒了——跑完会说');
+      var hint=$('mem-import-hint');
+      if(hint) hint.textContent='正在导入…';
+      var tries=0;
+      var timer=setInterval(function(){
+        tries++;
+        var st=call('importMemoryStatus');
+        if(!st||st.success===false){ clearInterval(timer); if(hint) hint.textContent='查不到进度'; return; }
+        if(st.running){
+          if(hint) hint.textContent='正在导入…（'+tries+' 秒）';
+          if(tries>180){ clearInterval(timer); if(hint) hint.textContent='跑了很久，先歇着，回头再点一次就行'; }
+          return;
+        }
+        clearInterval(timer);
+        var rr=st.result||{};
+        var msg=rr.message||rr.error||'跑完了';
+        if(hint) hint.textContent=msg;
+        toast(msg);
+      },1000);
+      break;
+    case 'del-mem':
+      confirmModal('删掉这条记忆？','删了就是真没了。手记里那条记录还在，但「当时的感受」这一份会消失。',function(){
+        var r=call('deleteMemory',[el.getAttribute('data-id')]);
+        if(r&&r.success===false) toast(r.error||'删不了');
+        else { if(loadAll()) render(); toast('忘了'); }
+      });
+      break;
+
+    /* 存档 */
+    case 'use-pf':
+      var ur=call('switchProfile',[k]);
+      if(ur&&ur.success===false) toast(ur.error||'切不了');
+      else { if(loadAll()) render(); toast('已切到这本'); }
+      break;
+    case 'edit-pf': S.vaultEdit=(S.vaultEdit===k?null:k); render(); break;
+    case 'save-pf': saveProfileEdit(k); break;
+    case 'toggle-pick':
+      S.pickOpen=!S.pickOpen;
+      if(S.pickOpen) loadPickFiles(); else { S.pickFiles=null; render(); }
+      break;
+    case 'use-file': useFile(k); break;
+    case 'add-pf': S.addProfileModal=true; openAddProfile(); break;
+    case 'pick-card':
+      // 点角色卡名 → 只把它填进「绑哪个角色卡」那一栏，存不存由您按「保存」
+      (function(){
+        var box=null;
+        eachEl('[data-edit]',function(el){ if(el.getAttribute('data-edit')===k) box=el; });
+        if(!box) return;
+        var els=box.querySelectorAll('[data-e]');
+        for(var i=0;i<els.length;i++){
+          if(els[i].getAttribute('data-e')==='card_name'){ els[i].value=v; break; }
+        }
+        toast('填上了，记得按「保存」');
+      })();
+      break;
+    case 'del-pf':
+      var pf=null;
+      for(var pi=0;pi<S.registry.profiles.length;pi++) if(S.registry.profiles[pi].id===k) pf=S.registry.profiles[pi];
+      openDeleteProfile(k, (pf&&pf.name)||'这本');
+      break;
+    case 'del-pf-soft':
+      closeModal(); doDeleteProfile(k,'keep'); break;
+    case 'del-pf-hard':
+      closeModal(); doDeleteProfile(k,'hard'); break;
+
+    /* 文件行左滑：改名 / 删除 */
+    case 'rename-file':
+      openRenameFile(k, el.getAttribute('data-name')||'');
+      break;
+    case 'rename-ok':
+      (function(){
+        var fld=$('rf_name');
+        var nm=fld?(fld.value||'').trim():'';
+        if(!nm){ toast('名字不能空'); return; }
+        var r=call('renameFile',[JSON.stringify({path:k,name:nm})]);
+        closeModal();
+        if(r&&r.success===false){ toast('改不了：'+(r.error||'')); return; }
+        loadAll(); refreshAfterFileChange();
+        toast('改好了：'+((r&&r.rel)||nm));
+      })();
+      break;
+    case 'del-file':
+      openDeleteFile(k, el.getAttribute('data-name')||String(k).split('/').pop());
+      break;
+    case 'del-file-soft':
+      closeModal(); doDeleteFile(k,'keep'); break;
+    case 'del-file-hard':
+      closeModal(); doDeleteFile(k,'hard'); break;
+
+    /* 备份 / 导入 */
+    case 'exp-block':
+      S.expBlocks=S.expBlocks||[];
+      (function(){
+        var i=S.expBlocks.indexOf(v);
+        if(i>=0) S.expBlocks.splice(i,1); else S.expBlocks.push(v);
+        render();
+      })();
+      break;
+    case 'backup-all':
+      var b1=call('backup',[bkArg(null,'manual')]);
+      if(b1&&b1.path){ toast('导好了：'+String(b1.path).split('/').pop()); if(loadAll()) render(); }
+      else toast('导出失败'+((b1&&b1.error)?('：'+b1.error):''));
+      break;
+    case 'backup-blocks':
+      if(!(S.expBlocks||[]).length){ toast('先勾几块'); break; }
+      var b2=call('backup',[bkArg(S.expBlocks||[],'block')]);
+      if(b2&&b2.path){ toast('导好了：'+String(b2.path).split('/').pop()); if(loadAll()) render(); }
+      else toast('导出失败'+((b2&&b2.error)?('：'+b2.error):''));
+      break;
+    case 'imp-path':
+      (function(){
+        var el2=$('imp_path');
+        var p=el2?(el2.value||'').trim():'';
+        if(!p){ toast('先填个路径'); return; }
+        doImportFrom(p);
+      })();
+      break;
+    case 'imp-scan':
+      (function(){
+        var dir = v==='download' ? '/storage/emulated/0/Download' : '/storage/emulated/0/Download/Operit/闲逛手记/backup';
+        var r=call('listJson',[dir]);
+        var box=$('imp_files');
+        if(!box) return;
+        if(!r){ box.innerHTML='<div class="muted" style="margin-top:8px">桥没通——装上 v0.4.2 再试</div>'; return; }
+        var files=(r&&r.files)||[];
+        if(!files.length){ box.innerHTML='<div class="muted" style="margin-top:8px">这个目录下没找到 .json</div>'; return; }
+        var h2='<div class="filelist">';
+        for(var i=0;i<files.length;i++){
+          h2+='<div class="frow"><div class="fn">'+esc(files[i].name)+'</div>'
+            +'<div class="fs">'+fmtStamp(files[i].mtime)+' · '+fmtSize(files[i].size)+'</div>'
+            +'<button class="btn sm pri" data-act="imp-file" data-k="'+esc(files[i].path)+'">导入</button></div>';
+        }
+        box.innerHTML=h2+'</div>';
+      })();
+      break;
+    case 'imp-file':
+      doImportFrom(k);
+      break;
+    case 'imp-mode': S.impMode=v; render(); break;
+    case 'imp-block':
+      S.impBlocks=S.impBlocks||[];
+      (function(){
+        var i=S.impBlocks.indexOf(v);
+        if(i>=0) S.impBlocks.splice(i,1); else S.impBlocks.push(v);
+        render();
+      })();
+      break;
+    case 'do-import':
+      if(oldBridgeWarn()) break;
+      confirmModal('导入这份备份？',
+        '会按勾选的块写进当前这本手记。动手前会自动导出备份，出错能退。',
+        function(){
+          var mode=S.impMode||'replace';
+          var blocks=(S.impBlocks&&S.impBlocks.length)?S.impBlocks:null;
+          var r=call('importBackup',[JSON.stringify({path:k,blocks:blocks,mode:mode})]);
+          if(r&&r.success===false) toast('导不进：'+(r.error||''));
+          else { if(loadAll()) render(); toast('导好了，底也留了一份'); }
+        });
+      break;
+    case 'del-backup':
+      confirmModal('删掉这份备份？','删了就真没了。',function(){
+        call('deleteBackup',[k]);
+        if(loadAll()) render();
+        toast('删了');
+      });
+      break;
+    case 'modal-cancel':
+      closeModal(); break;
+    case 'modal-ok':
+      var fn=window._modalOk;
+      closeModal();
+      if(typeof fn==='function') fn();
+      break;
+  }
+});
+
+/* ============ 弹窗 ============ */
+/* 导入要单参 JSON，只有 0.4.3 起的桥认；老桥就直说，别让它装作失败 */
+function oldBridgeWarn(){
+  if(verAtLeast(S.bridgeVer,'0.4.3')) return false;
+  toast('桥还是旧版（'+(S.bridgeVer||'未知')+'）——把侧栏重开一次再导');
+  return true;
+}
+function doImportFrom(path){
+  if(!path) return;
+  if(oldBridgeWarn()) return;
+  confirmModal('导入这份文件？',
+    '会按勾选的块写进当前这本手记。动手前会自动导出备份，出错能退。',
+    function(){
+      var mode=S.impMode||'replace';
+    var blocks=(S.impBlocks&&S.impBlocks.length)?S.impBlocks:null;
+    var r=call('importBackup',[JSON.stringify({path:path,blocks:blocks,mode:mode})]);
+      if(r&&r.success===false) toast('导不进：'+(r.error||''));
+      else { if(loadAll()) render(); toast('导好了，底也留了一份'); }
+    });
+}
+
+function confirmModal(title,desc,onOk){
+  closeModal();
+  var m=document.createElement('div');
+  m.className='mask';
+  m.id='mask';
+  m.innerHTML='<div class="modal"><h3>'+esc(title)+'</h3>'
+    +'<div class="dangerbox"><div class="t">这一步不好回头</div><div class="d">'+esc(desc)+'</div></div>'
+    +'<div class="acts"><button class="btn ghost" data-act="modal-cancel">再想想</button>'
+    +'<button class="btn danger" data-act="modal-ok">确定</button></div></div>';
+  document.body.appendChild(m);
+  window._modalOk=onOk;
+}
+function closeModal(){
+  var m=$('mask');
+  if(m) m.parentNode.removeChild(m);
+  window._modalOk=null;
+}
+
+function openRenameFile(path, curName){
+  closeModal();
+  var m=document.createElement('div');
+  m.className='mask'; m.id='mask';
+  m.innerHTML='<div class="modal"><h3>给这份文件改个名</h3>'
+    +'<label class="f">文件名（.json）</label>'
+    +'<input type="text" id="rf_name" value="'+esc(curName||'')+'" />'
+    +'<div class="hint">只改文件名，里面的手记一个字不碰。注册表里指着它的那本会一起改过来，不会失联。</div>'
+    +'<div class="acts" style="margin-top:14px"><button class="btn ghost" data-act="modal-cancel">算了</button>'
+    +'<button class="btn pri" data-act="rename-ok" data-k="'+esc(path)+'">改名</button></div></div>';
+  document.body.appendChild(m);
+  var f=$('rf_name');
+  if(f){ try{ f.focus(); if(f.select) f.select(); }catch(e){} }
+}
+
+/* 删文件：两种删法让用户挑——留痕删（先备份）/ 直接删（不留底） */
+function openDeleteFile(path, nm){
+  closeModal();
+  var m=document.createElement('div');
+  m.className='mask'; m.id='mask';
+  m.innerHTML='<div class="modal"><h3>删掉「'+esc(nm||'这份文件')+'」？</h3>'
+    +'<div class="dangerbox"><div class="t">这一步不好回头</div>'
+    +'<div class="d">两种删除方式：留痕删会先整份抄进 backup/ 留底；直接删不留底，删掉即不可恢复。</div></div>'
+    +'<div class="acts" style="margin-top:12px;gap:8px;flex-wrap:wrap">'
+    +'<button class="btn ghost" data-act="modal-cancel">再想想</button>'
+    +'<button class="btn pri" data-act="del-file-soft" data-k="'+esc(path)+'">留痕删除</button>'
+    +'<button class="btn danger" data-act="del-file-hard" data-k="'+esc(path)+'">直接删除</button>'
+    +'</div></div>';
+  document.body.appendChild(m);
+}
+
+function doDeleteFile(path, mode){
+  var r=call('deleteFile',[JSON.stringify({path:path,mode:mode})]);
+  if(r&&r.success===false){ toast('删不了：'+(r.error||'')); return; }
+  loadAll();
+  refreshAfterFileChange();
+  var extra=(r&&r.detached)?('，连带摘掉 '+r.detached+' 本'):'';
+  toast(mode==='hard'?('删了，没留底'+extra):('移走了，底留在 backup/'+extra));
+}
+
+/* 删一本手记：跟删文件一个规矩——两种删法让用户挑 */
+function openDeleteProfile(id, nm){
+  closeModal();
+  var m=document.createElement('div');
+  m.className='mask'; m.id='mask';
+  m.innerHTML='<div class="modal"><h3>删掉「'+esc(nm||'这本')+'」？</h3>'
+    +'<div class="dangerbox"><div class="t">这一步不好回头</div>'
+    +'<div class="d">这本会从列表里摘掉，它的数据文件也一并清掉。两种删除方式：留痕删会先把整本抄进 backup/ 留底；直接删不留底，删掉即不可恢复。</div></div>'
+    +'<div class="acts" style="margin-top:12px;gap:8px;flex-wrap:wrap">'
+    +'<button class="btn ghost" data-act="modal-cancel">再想想</button>'
+    +'<button class="btn pri" data-act="del-pf-soft" data-k="'+esc(id)+'">留痕删除</button>'
+    +'<button class="btn danger" data-act="del-pf-hard" data-k="'+esc(id)+'">直接删除</button>'
+    +'</div></div>';
+  document.body.appendChild(m);
+}
+
+function doDeleteProfile(id, mode){
+  var r=call('removeProfile',[JSON.stringify({id:id,mode:mode})]);
+  if(r&&r.success===false){ toast('删不了：'+(r.error||'')); return; }
+  loadAll();
+  refreshAfterFileChange();
+  var extra=(r&&r.shared)?'（数据文件还有别的本在用，没动它）':'';
+  toast(mode==='hard'?('直接删了，没留底'+extra):('留痕删了，底在 backup/'+extra));
+}
+
+function openAddProfile(){
+  closeModal();
+  var cards=(S.cards||[]);
+  var ch='';
+  for(var i=0;i<cards.length;i++){
+    ch+='<span class="chip" data-act="newpf-card" data-v="'+esc(cards[i].name)+'">'+esc(cards[i].name)+'</span>';
+  }
+  var m=document.createElement('div');
+  m.className='mask'; m.id='mask';
+  m.innerHTML='<div class="modal"><h3>新起一本手记</h3>'
+    +'<label class="f">叫什么</label><input type="text" id="np_name" placeholder="比如：另一个 AI" />'
+    +'<label class="f">绑哪个角色卡</label><input type="text" id="np_card" placeholder="写角色卡名" />'
+    +(ch?('<div class="chips" style="margin-top:6px">'+ch+'</div>'):'')
+    +'<label class="f">出门逛时的口吻</label><textarea rows="2" id="np_persona" placeholder="比如：话少，爱看旧东西。"></textarea>'
+    +'<div class="hint">新这本会另起一个数据文件，跟现在这本互不打扰。</div>'
+    +'<div class="acts" style="margin-top:14px"><button class="btn ghost" data-act="modal-cancel">算了</button>'
+    +'<button class="btn pri" data-act="newpf-ok">建</button></div></div>';
+  document.body.appendChild(m);
+}
+
+document.addEventListener('click',function(ev){
+  var el=ev.target.closest('[data-act]');
+  if(!el) return;
+  var act=el.getAttribute('data-act');
+  if(act==='newpf-card'){
+    var f=$('np_card'); if(f) f.value=el.getAttribute('data-v');
+  }
+  if(act==='newpf-ok'){
+    var name=($('np_name')&&$('np_name').value||'').trim()||'新存档';
+    var card=($('np_card')&&$('np_card').value||'').trim();
+    var persona=($('np_persona')&&$('np_persona').value||'').trim();
+    var r=call('addProfile',[JSON.stringify({name:name,card_name:card,persona:persona})]);
+    closeModal();
+    if(r&&r.success===false) toast('建不了：'+(r.error||''));
+    else { if(loadAll()) render(); toast('新起了一本：'+name); }
+  }
+});
+
+/* ============ 启动 ============ */
+var _bootTry=0;
+function boot(){
+  if(!loadAll()){
+    _bootTry++;
+    if(_bootTry<=4){ setTimeout(boot,500); return; }
+    var app=$('app');
+    if(app) app.innerHTML='<div class="empty" style="padding-top:70px"><div class="big">🔌</div>'
+      +'<p>没连上账本（JS 桥没通）</p>'
+      +'<p style="font-size:12px;margin-top:10px">多半是插件没重装。重装一次「闲逛手记」，或把这页关掉再进来。</p></div>';
+    return;
+  }
+  // 桥自检：把可用/缺失的方法写进插件日志，下回一出问题一眼看得见
+  try{
+    var want=['load','save','saveRegistry','switchProfile','addProfile','updateProfile','removeProfile',
+      'backup','listBackups','listJson','readBackup','deleteBackup','renameFile','deleteFile','importBackup','memoryTick','deleteMemory',
+      'openUrl','copyText','listCards','ping'];
+    var have=[],miss=[];
+    for(var i=0;i<want.length;i++){ if(hasFn(want[i])) have.push(want[i]); else miss.push(want[i]); }
+    var pg=hasFn('ping')?call('ping'):null;
+    S.bridgeVer=(pg&&pg.version)||'';
+    var sh=hasFn('shape')?call('shape',['{"probe":1}']):null;
+    if(sh&&sh.success!==false){
+      S.bridgeShape=(sh.aIsArr?('数组'+sh.aLen):(sh.aType||'?'))+(sh.obj?'/认对象':'/不认对象');
+    } else { S.bridgeShape='桥无 shape 方法（旧桥）'; }
+    call('log',['桥自检 版本='+((pg&&pg.version)||'?')+' 参数形态='+S.bridgeShape+' 有('+have.length+'):'+have.join(',')+' 缺('+miss.length+'):'+miss.join(',')]);
+  }catch(e){}
+  render();
+  // 定时软刷新：让「上次上线/下线」跟着账本走。正在打字或开着弹窗时不打断。
+  if(!window.__softTimer){
+    window.__softTimer=setInterval(function(){
+      try{
+        var ae=document.activeElement;
+        if(ae&&/^(INPUT|TEXTAREA)$/.test(ae.tagName)) return;
+        if(document.getElementById('mask')) return;
+        if(loadAll()) render();
+      }catch(e){}
+    },60000);
+  }
+}
+/* 整页翻页：手势 + 点提示条 */
+function fitSwipe(w){
+  /* 换页改用 display，高度自己跟，不锁死 */
+  try{ w.style.height=''; }catch(e){}
+}
+function fitAllSwipes(){
+  try{
+    var ws=document.querySelectorAll('.swipe-wrap');
+    for(var i=0;i<ws.length;i++) fitSwipe(ws[i]);
+  }catch(e){}
+}
+document.addEventListener('touchstart',function(e){
+  var t=e.target, w=t&&t.closest?t.closest('.swipe-wrap'):null;
+  if(w) w._sx=e.touches[0].clientX;
+},true);
+document.addEventListener('touchend',function(e){
+  var t=e.target, w=t&&t.closest?t.closest('.swipe-wrap'):null;
+  if(!w) return;
+  var dx=e.changedTouches[0].clientX-(w._sx||0);
+  if(Math.abs(dx)<60) return;
+  flipCard(w, dx<0);
+},true);
+window.__fitSwipe=fitSwipe;
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot);
+else boot();
+})();
+</script>
+</body>
+</html>
