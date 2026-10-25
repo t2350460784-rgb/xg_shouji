@@ -44,7 +44,7 @@ function refreshWf() {
     } catch (e) { logInfo("读工作流异常：" + e); }
 }
 var _importState = { running: false, started: 0, result: null };
-var VERSION = "0.4.42";
+var VERSION = "0.4.57";
 
 /* ============================================
  * 铁律一：桥方法最多只收一个参数。
@@ -593,12 +593,18 @@ function Screen(ctx) {
                     }
                     var blocksArg = (o && o.blocks !== undefined) ? o.blocks : (rest.length ? rest : null);
                     var raw = Store.readFile(path);
-                    if (!raw) return ok({ success: false, error: "读不到这个文件" });
+                    if (!raw) {
+                        var why = (typeof Store.lastReadError === "function" && Store.lastReadError()) ? ("（" + Store.lastReadError() + "）") : "";
+                        return ok({ success: false, error: "读不到这个文件" + why + "：" + path });
+                    }
                     var payload;
-                    try { payload = JSON.parse(raw); } catch (e2) { return ok({ success: false, error: "不是合法的 JSON" }); }
+                    try { payload = JSON.parse(raw); } catch (e2) { return ok({ success: false, error: "不是合法的 JSON：" + e2.message }); }
                     if (!payload) return ok({ success: false, error: "文件是空的" });
-                    // 兼容：备份包 {kind,data} / 裸 data.json / 只带 data 字段
+                    // 兼容：备份包 {kind,data} / 裸 data.json / 只带 data 字段 / data 被存成字符串
                     var src = payload.data ? payload.data : payload;
+                    if (typeof src === "string") {
+                        try { src = JSON.parse(src); } catch (e4) { return ok({ success: false, error: "文件里的 data 是字符串，解析不了：" + e4.message }); }
+                    }
                     if (!src || (!src.records && !src.platforms && !src.memory && !src.preferences && !src.schedule)) {
                         return ok({ success: false, error: "这份文件里没有手记认得的内容" });
                     }
@@ -644,7 +650,15 @@ function Screen(ctx) {
                         }
                     }
                     Store.saveData(s.dataFile, d);
-                    return ok({ safety_backup: safe || "", wf: wfIn ? wfIn.length : 0 });
+                    /* 写完读回来验一遍：写没落盘、或落成半截，都得当场说，不能报「导好了」。 */
+                    var chk = Store.readFile(s.dataFile);
+                    if (!chk) return ok({ success: false, error: "写完读不回来，文件没落盘：" + s.dataFile });
+                    var back = null;
+                    try { back = JSON.parse(chk); } catch (e5) { return ok({ success: false, error: "写完的文件不是合法 JSON，已留底，请重开侧栏再导：" + e5.message }); }
+                    var want = Array.isArray(d.records) ? d.records.length : 0;
+                    var got = (back && Array.isArray(back.records)) ? back.records.length : 0;
+                    if (want !== got) return ok({ success: false, error: "写进去 " + want + " 条，读回来 " + got + " 条，对不上" });
+                    return ok({ safety_backup: safe || "", wf: wfIn ? wfIn.length : 0, records: got });
                 } catch (e) { return fail(e); }
             },
 
@@ -807,7 +821,9 @@ function Screen(ctx) {
                     var startH = parseInt(t.start, 10); if (isNaN(startH)) startH = 9;
                     var endH = parseInt(t.end, 10); if (isNaN(endH)) endH = 23;
                     var ms = hours * 3600000;
-                    var cmd = "H=$(date +%H); if [ $H -ge " + startH + " ] && [ $H -lt " + endH + " ]; then exit 0; else exit 1; fi";
+                    /* 2026-10-19 改：时间窗不再用 exit 1 表示「跳过」——引擎会把节点失败当成整条失败。
+                       改成输出 RUN/SKIP + exit 0，由后面的「在窗口吗」条件节点分流。 */
+                    var cmd = "H=$(date +%H); if [ $H -ge " + startH + " ] && [ $H -lt " + endH + " ]; then echo RUN; else echo SKIP; fi; exit 0";
                     var SV = "com.ai.assistance.operit.data.model.ParameterValue.StaticValue";
 
                     Tools.Workflow.disable(WF_ID)
@@ -845,6 +861,66 @@ function Screen(ctx) {
                     return ok({ success: true, queued: true, hours: hours, start: startH, end: endH, enabled: enabled });
                 } catch (e) { return fail(e); }
             },
+            /* 对账：工作流里的间隔/时间窗跟账本对不上才回填，一致就什么都不做。
+               侧栏打开时调一次，外部改了 data.json 也不会跟工作流脱钩。2026-10-19 */
+            reconcileSchedule: function () {
+                try {
+                    if (typeof Tools === "undefined" || !Tools.Workflow) return ok({ success: false, error: "环境里没有 Tools.Workflow" });
+                    var sn = snapshot();
+                    var s = (sn.data && sn.data.schedule) || {};
+                    var hours = parseInt(s.interval_hours, 10); if (isNaN(hours) || hours < 1) hours = 6; if (hours > 48) hours = 48;
+                    var startH = parseInt(s.active_start, 10); if (isNaN(startH)) startH = 9;
+                    var endH = parseInt(s.active_end, 10); if (isNaN(endH)) endH = 23;
+                    var wantMs = String(hours * 3600000);
+                    var SV = "com.ai.assistance.operit.data.model.ParameterValue.StaticValue";
+                    var wantCmd = "H=$(date +%H); if [ $H -ge " + startH + " ] && [ $H -lt " + endH + " ]; then echo RUN; else echo SKIP; fi; exit 0";
+                    var wantOn = s.enabled !== false;
+                    Tools.Workflow.get(WF_ID).then(function (wf) {
+                        var d = wf && (wf.data || wf);
+                        var ns = (d && d.nodes) || [];
+                        var need = false;
+                        for (var i = 0; i < ns.length; i++) {
+                            var n = ns[i];
+                            if (n.id === "trigger_sched" && String(((n.triggerConfig || {}).interval_ms) || "") !== wantMs) need = true;
+                            if (n.id === "exec_time_check" && String((((n.actionConfig || {}).command) || {}).value || "") !== wantCmd) need = true;
+                        }
+                        if (!need) { logInfo("定时对账：一致，不动"); return null; }
+                        logInfo("定时对账：对不上，回填一次");
+                        return Tools.Workflow.disable(WF_ID)
+                          .then(function () { return Tools.Workflow.get(WF_ID); })
+                          .then(function (wf2) {
+                            var d2 = wf2 && (wf2.data || wf2);
+                            var ns2 = (d2 && d2.nodes) || [];
+                            var patches = [];
+                            for (var j = 0; j < ns2.length; j++) {
+                                var m = ns2[j];
+                                if (m.id === "trigger_sched") {
+                                    var a = JSON.parse(JSON.stringify(m));
+                                    a.name = "定时触发(" + hours + "小时)";
+                                    a.triggerConfig = a.triggerConfig || {};
+                                    a.triggerConfig.interval_ms = wantMs;
+                                    a.triggerConfig.enabled = "true";
+                                    patches.push({ op: "update", id: "trigger_sched", node: a });
+                                } else if (m.id === "exec_time_check") {
+                                    var b = JSON.parse(JSON.stringify(m));
+                                    b.actionConfig = b.actionConfig || {};
+                                    b.actionConfig.command = { __type: SV, value: wantCmd };
+                                    patches.push({ op: "update", id: "exec_time_check", node: b });
+                                }
+                            }
+                            if (!patches.length) return null;
+                            return Tools.Workflow.patch(WF_ID, { node_patches: patches });
+                          })
+                          .then(function () {
+                            if (wantOn) return Tools.Workflow.enable(WF_ID);
+                            logInfo("定时是关的，回填后保持禁用");
+                            return null;
+                          });
+                    }).catch(function (e) { logInfo("定时对账失败：" + e); });
+                    return ok({ success: true, queued: true, hours: hours, start: startH, end: endH, enabled: wantOn });
+                } catch (e) { return fail(e); }
+            },
+
                         saveSpeechPrefs: function (a) {
                 try {
                     var t = argObj(a) || JSON.parse(argStr(a) || "{}");
