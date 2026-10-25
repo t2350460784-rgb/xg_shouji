@@ -34,7 +34,7 @@
     {
       "__type": "com.ai.assistance.operit.data.model.ExecuteNode",
       "id": "exec_time_check",
-      "name": "时间窗口(09-23)",
+      "name": "时间窗口(窗口内 RUN)",
       "position": {
         "x": -480,
         "y": 840
@@ -43,7 +43,7 @@
       "actionConfig": {
         "command": {
           "__type": "com.ai.assistance.operit.data.model.ParameterValue.StaticValue",
-          "value": "H=$(date +%H); if [ $H -ge 9 ] && [ $H -lt 23 ]; then exit 0; else exit 1; fi"
+          "value": "H=$(date +%H); if [ $H -ge 9 ] && [ $H -lt 23 ]; then echo RUN; else echo SKIP; fi; exit 0"
         }
       }
     },
@@ -251,7 +251,7 @@
       "actionConfig": {
         "command": {
           "__type": "com.ai.assistance.operit.data.model.ParameterValue.StaticValue",
-          "value": "D=/sdcard/Download/Operit/.wfguard; mkdir -p \"$D\" 2>/dev/null || true; F=\"$D/wander.ts\"; N=$(date +%s); B=/sdcard/Download/Operit/闲逛手记/data.json; H=$(grep -o '\"interval_hours\"[^,}]*' \"$B\" 2>/dev/null | grep -o '[0-9][0-9.]*' | head -1); if [ -z \"$H\" ]; then H=6; fi; HI=${H%.*}; TH=$(( HI * 3600 * 66 / 100 )); L=0; if [ -f \"$F\" ]; then L=$(cat \"$F\" 2>/dev/null || echo 0); fi; if [ \"$L\" -gt 0 ] 2>/dev/null && [ $((N-L)) -lt $TH ]; then exit 1; fi; echo \"$N\" > \"$F\" 2>/dev/null || true; exit 0"
+          "value": "D=/sdcard/Download/Operit/.wfguard; mkdir -p \"$D\" 2>/dev/null || true; F=\"$D/wander.ts\"; N=$(date +%s); B=/sdcard/Download/Operit/闲逛手记/data.json; H=$(grep -o '\"interval_hours\"[^,}]*' \"$B\" 2>/dev/null | grep -o '[0-9][0-9.]*' | head -1); if [ -z \"$H\" ]; then H=6; fi; HI=${H%.*}; TH=$(( HI * 3600 * 66 / 100 )); L=0; if [ -f \"$F\" ]; then L=$(cat \"$F\" 2>/dev/null || echo 0); fi; if [ \"$L\" -gt 0 ] 2>/dev/null && [ $((N-L)) -lt $TH ]; then echo SKIP; exit 0; fi; echo \"$N\" > \"$F\" 2>/dev/null || true; echo RUN; exit 0"
         }
       }
     },
@@ -303,8 +303,8 @@
       "id": "exec_chatcfg",
       "name": "读账本(取投放对话)",
       "position": {
-        "x": -2700.0,
-        "y": 360.0
+        "x": -2700,
+        "y": 360
       },
       "actionType": "xg_shouji_tools:read_wander_config"
     },
@@ -313,8 +313,8 @@
       "id": "exec_chatq",
       "name": "提取对话标题",
       "position": {
-        "x": -2500.0,
-        "y": 360.0
+        "x": -2500,
+        "y": 360
       },
       "source": {
         "__type": "com.ai.assistance.operit.data.model.ParameterValue.NodeReference",
@@ -329,8 +329,8 @@
       "name": "找投放对话",
       "description": "按账本里的对话标题找对话，找不到这趟就断",
       "position": {
-        "x": -2300.0,
-        "y": 360.0
+        "x": -2300,
+        "y": 360
       },
       "actionType": "extended_chat:find_chat",
       "actionConfig": {
@@ -345,8 +345,8 @@
       "id": "exec_chatid",
       "name": "提取对话ID",
       "position": {
-        "x": -2100.0,
-        "y": 360.0
+        "x": -2100,
+        "y": 360
       },
       "source": {
         "__type": "com.ai.assistance.operit.data.model.ParameterValue.NodeReference",
@@ -361,8 +361,8 @@
       "name": "平台清单(文本)",
       "description": "从账本读平台与适配器，拼进 AI 节点的提示词——新加平台不用再手改节点",
       "position": {
-        "x": -2650.0,
-        "y": 480.0
+        "x": -2650,
+        "y": 480
       },
       "source": {
         "__type": "com.ai.assistance.operit.data.model.ParameterValue.NodeReference",
@@ -376,8 +376,8 @@
       "id": "exec_stroll_msg",
       "name": "拼消息(去逛逛)",
       "position": {
-        "x": -1900.0,
-        "y": 480.0
+        "x": -1900,
+        "y": 480
       },
       "mode": "CONCAT",
       "others": [
@@ -400,8 +400,8 @@
       "id": "exec_stroll_retry_msg",
       "name": "拼消息(补喊一次)",
       "position": {
-        "x": -1890.0,
-        "y": 520.0
+        "x": -1890,
+        "y": 520
       },
       "mode": "CONCAT",
       "others": [
@@ -424,8 +424,8 @@
       "id": "exec_stroll_retry2_msg",
       "name": "拼消息(补喊二次(最后))",
       "position": {
-        "x": -1880.0,
-        "y": 560.0
+        "x": -1880,
+        "y": 560
       },
       "mode": "CONCAT",
       "others": [
@@ -448,8 +448,8 @@
       "id": "exec_wake_msg",
       "name": "拼消息(苏醒)",
       "position": {
-        "x": -1870.0,
-        "y": 600.0
+        "x": -1870,
+        "y": 600
       },
       "mode": "CONCAT",
       "others": [
@@ -466,21 +466,47 @@
           "nodeId": "exec_plattext"
         }
       ]
+    },
+    {
+      "__type": "com.ai.assistance.operit.data.model.ConditionNode",
+      "id": "win_cond",
+      "name": "在窗口吗",
+      "description": "窗口内输出 RUN 继续逛，窗口外走跳过分支",
+      "position": {
+        "x": -60,
+        "y": 840
+      },
+      "left": {
+        "__type": "com.ai.assistance.operit.data.model.ParameterValue.NodeReference",
+        "nodeId": "exec_time_check"
+      },
+      "operator": "CONTAINS",
+      "right": {
+        "__type": "com.ai.assistance.operit.data.model.ParameterValue.StaticValue",
+        "value": "RUN"
+      }
+    },
+    {
+      "__type": "com.ai.assistance.operit.data.model.ConditionNode",
+      "id": "guard_cond",
+      "name": "该跑吗",
+      "description": "哨兵输出 RUN 才往下走，SKIP 走跳过分支",
+      "position": {
+        "x": -960,
+        "y": 620
+      },
+      "left": {
+        "__type": "com.ai.assistance.operit.data.model.ParameterValue.NodeReference",
+        "nodeId": "exec_guard"
+      },
+      "operator": "CONTAINS",
+      "right": {
+        "__type": "com.ai.assistance.operit.data.model.ParameterValue.StaticValue",
+        "value": "RUN"
+      }
     }
   ],
   "connections": [
-    {
-      "id": "conn_2",
-      "sourceNodeId": "exec_time_check",
-      "targetNodeId": "exec_wake",
-      "condition": "on_success"
-    },
-    {
-      "id": "conn_3",
-      "sourceNodeId": "exec_time_check",
-      "targetNodeId": "exec_skip",
-      "condition": "on_error"
-    },
     {
       "id": "conn_4",
       "sourceNodeId": "trigger_manual",
@@ -566,24 +592,6 @@
       "condition": "on_success"
     },
     {
-      "id": "cguard_b",
-      "sourceNodeId": "exec_guard",
-      "targetNodeId": "exec_time_check",
-      "condition": "on_success"
-    },
-    {
-      "id": "cguard_c",
-      "sourceNodeId": "exec_guard",
-      "targetNodeId": "exec_guard_skip",
-      "condition": "on_error"
-    },
-    {
-      "id": "conn_wake",
-      "sourceNodeId": "exec_wake",
-      "targetNodeId": "exec_chatcfg",
-      "condition": "on_success"
-    },
-    {
       "id": "conn_17",
       "sourceNodeId": "exec_chatcfg",
       "targetNodeId": "exec_chatq",
@@ -602,8 +610,50 @@
       "condition": "on_success"
     },
     {
-      "id": "conn_20",
+      "id": "conn_2",
+      "sourceNodeId": "exec_time_check",
+      "targetNodeId": "win_cond",
+      "condition": "on_success"
+    },
+    {
+      "id": "conn_2a",
+      "sourceNodeId": "win_cond",
+      "targetNodeId": "exec_chatcfg",
+      "condition": "true"
+    },
+    {
+      "id": "conn_3",
+      "sourceNodeId": "win_cond",
+      "targetNodeId": "exec_skip",
+      "condition": "false"
+    },
+    {
+      "id": "cguard_b",
+      "sourceNodeId": "exec_guard",
+      "targetNodeId": "guard_cond",
+      "condition": "on_success"
+    },
+    {
+      "id": "cguard_b1",
+      "sourceNodeId": "guard_cond",
+      "targetNodeId": "exec_time_check",
+      "condition": "true"
+    },
+    {
+      "id": "cguard_c",
+      "sourceNodeId": "guard_cond",
+      "targetNodeId": "exec_guard_skip",
+      "condition": "false"
+    },
+    {
+      "id": "c_chatid_wake",
       "sourceNodeId": "exec_chatid",
+      "targetNodeId": "exec_wake",
+      "condition": "on_success"
+    },
+    {
+      "id": "c_wake_stroll",
+      "sourceNodeId": "exec_wake",
       "targetNodeId": "exec_stroll",
       "condition": "on_success"
     }
