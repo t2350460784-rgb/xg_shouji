@@ -9,6 +9,7 @@
 面板页内嵌进 panel.ui.js，缺文件时自动释放，装包的人不会白屏。
 """
 import json
+import re
 import os
 import sys
 import zipfile
@@ -61,6 +62,23 @@ def collect(src_name):
     return sorted(entries, key=lambda x: x[1])
 
 
+LIVE_UI_DIR = '/storage/emulated/0/Download/Operit/闲逛手记/_ui'
+
+
+def sync_live_panel(html, public):
+    """侧栏实际加载的是 _ui/panel.html 这份外部页，打包时顺手同步过去。"""
+    name = 'panel_public.html' if public else 'panel.html'
+    dst = os.path.join(LIVE_UI_DIR, name)
+    if not os.path.isdir(LIVE_UI_DIR):
+        print('live panel skip: missing ' + LIVE_UI_DIR)
+        return
+    try:
+        open(dst, 'w', encoding='utf-8').write(html)
+        print('live panel synced: ' + dst)
+    except Exception as e:
+        print('live panel fail: %s' % e)
+
+
 def apply_panel(entries, src_name):
     """把面板页内嵌进 dist/ui/panel.ui.js（只在打包时生效，不动源文件）。"""
     public = (src_name == 'dist_public')
@@ -70,15 +88,21 @@ def apply_panel(entries, src_name):
         return entries
     html = open(html_src, encoding='utf-8').read()
     target = embed_panel.PUBLIC_PATH if public else embed_panel.LOCAL_PATH
+    # 面板上显示的版本号必须跟着 manifest 走，不然改了版本号页面还挂旧的
+    _ver = json.load(open(os.path.join(ROOT, 'manifest.json'), encoding='utf-8')).get('version', '0.0.0')
+    # 页面上的 PAGE_VER 也钉成 manifest 版本，顺手同步到侧栏真正加载的那份外部页
+    html = re.sub(r"var PAGE_VER = '[^']*';", "var PAGE_VER = '%s';" % _ver, html, count=1)
+    sync_live_panel(html, public)
     out = []
     for real, rel in entries:
         if rel.replace(os.sep, '/').endswith('ui/panel.ui.js'):
             js = open(real, encoding='utf-8').read()
+            js = re.sub(r'var VERSION = "[^"]*";', 'var VERSION = "%s";' % _ver, js, count=1)
             open(TMP_PANEL, 'w', encoding='utf-8').write(embed_panel.embed(js, html, target))
             out.append((TMP_PANEL, rel))
         else:
             out.append((real, rel))
-    print('panel embedded: %s (%d chars) -> %s' % (os.path.basename(html_src), len(html), target))
+    print('panel embedded: %s (%d chars, ver %s) -> %s' % (os.path.basename(html_src), len(html), _ver, target))
     return out
 
 
