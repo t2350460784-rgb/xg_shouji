@@ -22,7 +22,7 @@
     },
     {
       "name": "list_actions",
-      "description": "列出动作流水（执行过的动作 / 谁对 AI 做过什么）。可按平台、动作类型筛，返回最近若干条。出门前读它，才知道上次发了什么言、谁接了它的话。",
+      "description": "列出动作流水（我干过什么 / 谁对我做过什么）。可按平台、动作类型筛，返回最近若干条。出门前读它，才知道上次发了什么言、谁接了我的话。",
       "parameters": [
         { "name": "platform", "description": "平台名筛选，留空=全部", "type": "string", "required": false },
         { "name": "kind", "description": "动作类型筛选，如 public_reply / reply_received / like，留空=全部", "type": "string", "required": false },
@@ -122,7 +122,7 @@
         { "name": "impression", "description": "逛「当时」的印象与情绪（记忆库单独存这一条，跟 note 分开）。不填就用 note 兜底。", "type": "string", "required": false },
         { "name": "date", "description": "日期 YYYY-MM-DD（可选，默认今天）", "type": "string", "required": false },
         { "name": "time", "description": "时间 HH:MM（可选，默认此刻）", "type": "string", "required": false },
-        { "name": "diary", "description": "【日记页】主观那一页，{title, content, tags}。title 是你自己给这篇起的标题（可空）；content 是以「那天的它」的口吻写的话。要求：**要有你自己的思考、判断、感想**，但让事实垫底——写清看了什么，再说你怎么看；可以是日记、手记、随笔，形式随意、长短随意。唯一要避的是：结尾来一句别人看不懂的升华或中二感慨。实在没什么可说，就别填这一项。", "type": "object", "required": false }
+        { "name": "diary", "description": "【日记页】主观那一页，{title, content, tags}。title 是你自己给这篇起的标题（可空）；content 是以「那天的我」的口吻写的话。要求：**要有你自己的思考、判断、感想**，但让事实垫底——写清看了什么，再说你怎么看；可以是日记、手记、随笔，形式随意、长短随意。唯一要避的是：结尾来一句别人看不懂的升华或中二感慨。实在没什么可说，就别填这一项。", "type": "object", "required": false }
       ]
     },
     {
@@ -131,7 +131,7 @@
       "parameters": [
         { "name": "query", "description": "要回忆的线索，自然语言或关键词，如「旧书店」「那天晚上看的东西」", "type": "string", "required": true },
         { "name": "limit", "description": "最多返回几条，默认 3", "type": "number", "required": false },
-        { "name": "by", "description": "谁勾起的：user（用户主动聊起）或 ai（AI 随口想起），默认 user", "type": "string", "required": false },
+        { "name": "by", "description": "谁勾起的：user（主人主动聊起）或 ai（我随口想起），默认 user", "type": "string", "required": false },
         { "name": "touch", "description": "是否给命中的记忆记一次「被记起」，默认 true", "type": "boolean", "required": false }
       ]
     },
@@ -165,7 +165,7 @@
     },
     {
       "name": "finish_wander_trip",
-      "description": "一趟逛完收工：记下本次出门时间 last_run_at，并销掉用户按下的「催我出门逛一趟」那条排队请求。逛完就调它。",
+      "description": "一趟逛完收工：记下本次出门时间 last_run_at，并销掉主人按下的「催我出门逛一趟」那条排队请求。逛完就调它。",
       "parameters": []
     },
     {
@@ -196,12 +196,12 @@
     },
     {
       "name": "write_action",
-      "description": "记一条动作流水：执行过的动作，或谁对 AI 做了什么。每条记下时间、平台、动作类型、对象、发起人、标题、链接、内容、结果。用于回答「你昨天给谁点过赞」「谁回过它」「这周评论过几条」这类问题。",
+      "description": "记一条动作流水：我干过什么，或谁对我做了什么。每条记下时间、平台、动作类型、对象、发起人、标题、链接、内容、结果。用于回答「你昨天给谁点过赞」「谁回过我」「这周评论过几条」这类问题。",
       "parameters": [
         { "name": "platform", "description": "平台名，如 B站 / 小红书", "type": "string", "required": true },
-        { "name": "kind", "description": "动作类型：like / dislike / comment / favorite / unfavorite / follow / unfollow / public_reply（AI 公开发言）/ reply_received（别人回了它）/ mention（被 @）/ dm_received（收到私信）/ dm_reply（AI 回私信）", "type": "string", "required": true },
+        { "name": "kind", "description": "动作类型：like / dislike / comment / favorite / unfavorite / follow / unfollow / public_reply（我公开发言）/ reply_received（别人回了我）/ mention（被 @）/ dm_received（收到私信）/ dm_reply（我回私信）", "type": "string", "required": true },
         { "name": "target", "description": "动作对象（视频 BV 号 / 用户 uid / 帖子 id）", "type": "string", "required": false },
-        { "name": "actor", "description": "发起动作的人（记「谁回了它」时填对方昵称）", "type": "string", "required": false },
+        { "name": "actor", "description": "发起动作的人（记「谁回了我」时填对方昵称）", "type": "string", "required": false },
         { "name": "title", "description": "对象标题（视频标题 / 用户名）", "type": "string", "required": false },
         { "name": "url", "description": "对象链接", "type": "string", "required": false },
         { "name": "text", "description": "动作内容（评论正文等）", "type": "string", "required": false },
@@ -283,14 +283,84 @@ function stamp(d) {
 }
 
 /* ---------- 文件 ---------- */
-async function readText(path) {
+/* 读文件要分清「不在」和「读不出」——混成一个 null，上层就会拿空账本盖掉真账本。 */
+async function readTextInfo(path) {
     try {
         var ex = await Tools.Files.exists(path, FILE_ENV);
-        if (!ex || !ex.exists) return null;
+        if (!ex || !ex.exists) return { exists: false, ok: false, text: null, error: "文件不存在" };
         var r = await Tools.Files.read({ path: path, environment: FILE_ENV });
         var t = r && typeof r.content === "string" ? r.content : "";
-        return t || null;
-    } catch (e) { logError("读失败 " + path + ": " + e.message); return null; }
+        if (!t) return { exists: true, ok: false, text: null, error: "文件是空的（0字节）" };
+        if (!t.trim()) return { exists: true, ok: false, text: null, error: "文件里只有空白" };
+        return { exists: true, ok: true, text: t, error: "" };
+    } catch (e) {
+        logError("读失败 " + path + ": " + e.message);
+        return { exists: true, ok: false, text: null, error: e.message || "读取异常" };
+    }
+}
+async function readText(path) {
+    var info = await readTextInfo(path);
+    return info.ok ? info.text : null;
+}
+
+/* ---------- 写盘：原子写 + 跨进程锁 ----------
+ * 2026-10-19 夜，账本被两笔写入撞在一起，从中间撕成两半。
+ * 从那以后写盘只走一条路：先写 .tmp，验过再整体换名；换名之前先抢锁。
+ * 锁是一个同名目录——mkdir 是原子的，抢到的人写，没抢到的等，等到超时就认输。
+ * 宁可这一笔晚两秒，也不能让半个 JSON 留在盘上。 */
+var LOCK_WAIT_MS = 2500;
+var LOCK_STALE_MS = 8000;
+
+function jsSleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+
+async function shOut(cmd) {
+    try {
+        var r = await Tools.System.shell(cmd);
+        return r ? String(r.output || "") : "";
+    } catch (e) { return ""; }
+}
+
+async function lockTake(path) {
+    var lk = path + ".lock";
+    var t0 = Date.now();
+    while (Date.now() - t0 < LOCK_WAIT_MS) {
+        var out = await shOut("mkdir '" + lk + "' 2>/dev/null && echo L || echo B");
+        if (out.indexOf("L") >= 0) return lk;
+        /* 陈旧锁：拿着锁的那笔要是死了，锁不能永远挂着——超时就拆掉 */
+        await shOut("if [ -d '" + lk + "' ]; then n=$(date +%s); m=$(stat -c %Y '" + lk + "' 2>/dev/null || echo $n); [ $((n - m)) -gt " + Math.round(LOCK_STALE_MS / 1000) + " ] && rm -rf '" + lk + "'; fi");
+        await jsSleep(60);
+    }
+    logError("锁没抢到，照写但可能撞车: " + path);
+    return "";
+}
+
+async function lockDrop(lk) {
+    if (!lk) return;
+    await shOut("rm -rf '" + lk + "'");
+}
+
+async function writeTextRaw(path, text) {
+    try {
+        await Tools.Files.write(path, text, false, FILE_ENV);
+        return true;
+    } catch (e) { logError("写失败 " + path + ": " + e.message); return false; }
+}
+
+/* 不加锁的那半截：写 .tmp → 验 → 换名。调用方必须已经拿到锁。 */
+async function atomicWriteUnlocked(path, text) {
+    var tmp = path + ".tmp";
+    try {
+        await Tools.Files.write(tmp, text, false, FILE_ENV);
+        var chk = await readTextInfo(tmp);
+        if (!chk.ok || !chk.text || chk.text.length < 2) throw new Error("临时文件没写出来");
+        var mv = await shOut("mv -f '" + tmp + "' '" + path + "' && echo MOVED");
+        if (mv.indexOf("MOVED") < 0) throw new Error("换名没成：" + mv.slice(0, 120));
+        return true;
+    } catch (e) {
+        logError("原子写走不通，退回直接写 " + path + ": " + (e && e.message ? e.message : e));
+        try { await Tools.Files.deleteFile(tmp); } catch (e2) { }
+        return await writeTextRaw(path, text);
+    }
 }
 
 async function writeText(path, text) {
@@ -300,10 +370,99 @@ async function writeText(path, text) {
         logError("拒绝写入非法 JSON: " + path);
         return false;
     }
+    var lk = await lockTake(path);
     try {
-        await Tools.Files.write(path, text, false, FILE_ENV);
-        return true;
-    } catch (e) { logError("写失败 " + path + ": " + e.message); return false; }
+        return await atomicWriteUnlocked(path, text);
+    } finally {
+        await lockDrop(lk);
+    }
+}
+
+/* ---------- 三方合并（丢更新防线） ----------
+ * 2026-10-19 夜加：两笔同时改同一本账，后一笔会把前一笔整个盖掉——锁只防撕文件，防不住这个。
+ * base = 本进程上次读到的样子；ours = 我这次要写的；disk = 盘上此刻的。
+ * 规则：谁动过听谁的；两边动了同一块，列表按 id 并集，对象按字段逐层分；都动了同一格，我这边优先。
+ */
+function _stableStr(v) {
+    if (v === null || v === undefined) return String(v);
+    var t = typeof v;
+    if (t !== "object") return t + ":" + String(v);
+    if (Array.isArray(v)) {
+        var a = [];
+        for (var i = 0; i < v.length; i++) a.push(_stableStr(v[i]));
+        return "[" + a.join(",") + "]";
+    }
+    var ks = [];
+    for (var k in v) if (Object.prototype.hasOwnProperty.call(v, k)) ks.push(k);
+    ks.sort();
+    var o = [];
+    for (var j = 0; j < ks.length; j++) o.push(ks[j] + "=" + _stableStr(v[ks[j]]));
+    return "{" + o.join(",") + "}";
+}
+function _eqv(a, b) { return _stableStr(a) === _stableStr(b); }
+function _isObj(x) { return !!x && typeof x === "object" && !Array.isArray(x); }
+function _has(o, k) { return !!o && Object.prototype.hasOwnProperty.call(o, k); }
+function _idKey(o) {
+    if (_isObj(o)) {
+        if (o.id !== undefined && o.id !== null && o.id !== "") return "id:" + String(o.id);
+        if (o.ts !== undefined) return "ts:" + String(o.ts) + "|" + String(o.kind || "") + "|" + String(o.name || "") + "|" + String(o.title || "");
+    }
+    return "raw:" + _stableStr(o);
+}
+function _indexBy(arr) {
+    var m = {};
+    if (!Array.isArray(arr)) return m;
+    for (var i = 0; i < arr.length; i++) m[_idKey(arr[i])] = arr[i];
+    return m;
+}
+function _mergeArrays(base, ours, disk) {
+    var bI = _indexBy(base), dI = _indexBy(disk);
+    var out = [], seen = {}, k;
+    for (var i = 0; i < ours.length; i++) {
+        k = _idKey(ours[i]);
+        seen[k] = 1;
+        if (_has(dI, k)) out.push(_merge3(bI[k], ours[i], dI[k], 1));
+        else out.push(ours[i]);
+    }
+    for (var j = 0; j < disk.length; j++) {
+        k = _idKey(disk[j]);
+        if (!seen[k]) out.push(disk[j]);
+    }
+    return out;
+}
+function _merge3(base, ours, disk, depth) {
+    if (_eqv(ours, base)) return disk;
+    if (_eqv(disk, base)) return ours;
+    if (Array.isArray(ours) && Array.isArray(disk)) return _mergeArrays(base, ours, disk);
+    if (_isObj(ours) && _isObj(disk)) {
+        if ((depth || 0) >= 4) return ours;
+        var b = _isObj(base) ? base : {};
+        var out = {}, k;
+        for (k in b) if (_has(b, k) && !_has(ours, k) && !_has(disk, k)) out[k] = b[k];
+        for (k in disk) {
+            if (!_has(disk, k)) continue;
+            if (!_has(ours, k)) { out[k] = disk[k]; continue; }
+            out[k] = _merge3(b[k], ours[k], disk[k], (depth || 0) + 1);
+        }
+        for (k in ours) {
+            if (!_has(ours, k)) continue;
+            if (!_has(disk, k)) out[k] = ours[k];
+        }
+        return out;
+    }
+    return ours;
+}
+function mergeLedger(base, ours, disk) {
+    try {
+        if (!_isObj(ours) || !_isObj(disk)) return ours;
+        return _merge3(base || {}, ours, disk, 0);
+    } catch (e) { return ours; }
+}
+
+var _BASE = {};
+function _baseSet(path, d) { try { _BASE[path] = _stableStr(d); } catch (e) { } }
+function _baseGet(path) {
+    try { return _BASE[path] ? JSON.parse(_BASE[path]) : null; } catch (e) { return null; }
 }
 
 /* ---------- 注册表 ---------- */
@@ -319,14 +478,19 @@ function defaultRegistry() {
 }
 
 async function loadRegistry() {
-    var raw = await readText(REGISTRY_FILE);
-    if (!raw) {
+    var info = await readTextInfo(REGISTRY_FILE);
+    if (!info.exists) {
         var r0 = defaultRegistry();
         await writeText(REGISTRY_FILE, JSON.stringify(r0, null, 2));
         return r0;
     }
+    if (!info.ok) {
+        /* 读不出就不能当「没有」——绝不写默认注册表盖回去。 */
+        logError("profiles.json 读不出（" + info.error + "），原文件没动，本次用内存默认值");
+        return defaultRegistry();
+    }
     try {
-        var o = JSON.parse(raw);
+        var o = JSON.parse(info.text);
         if (!o || !Array.isArray(o.profiles) || !o.profiles.length) throw new Error("no profiles");
         if (!o.active) o.active = o.profiles[0].id;
         var hit = false;
@@ -334,7 +498,11 @@ async function loadRegistry() {
         if (!hit) o.active = o.profiles[0].id;
         return o;
     } catch (e) {
-        logError("profiles.json 损坏，已重置: " + e.message);
+        /* 坏了先留底再重置，别把原件直接冲掉。 */
+        logError("profiles.json 损坏: " + e.message);
+        try {
+            await Tools.Files.write(REGISTRY_FILE + ".broken_" + stamp(), info.text, false, FILE_ENV);
+        } catch (e2) { logError("坏注册表留底失败: " + e2.message); }
         var r1 = defaultRegistry();
         await writeText(REGISTRY_FILE, JSON.stringify(r1, null, 2));
         return r1;
@@ -415,19 +583,58 @@ async function loadLedger(profile) {
     var reg = await loadRegistry();
     var p = profile || findProfile(reg, reg.active) || reg.profiles[0];
     var path = dataPathOf(p);
-    var raw = await readText(path);
+    var info = await readTextInfo(path);
     var d;
-    if (!raw) d = ensureShape({});
-    else {
-        try { d = ensureShape(JSON.parse(raw)); }
-        catch (e) { logError("账本损坏: " + e.message); d = ensureShape({}); }
+    if (!info.exists) {
+        d = ensureShape({});
+    } else if (!info.ok) {
+        logError("账本读不出（" + info.error + "）" + path + "，原文件没动");
+        d = ensureShape({});
+        d.__load_error = "读不出账本：" + info.error;
+    } else {
+        try { d = ensureShape(JSON.parse(info.text)); _baseSet(path, d); }
+        catch (e) {
+            logError("账本损坏: " + e.message);
+            try {
+                await Tools.Files.write(path + ".broken_" + stamp(), info.text, false, FILE_ENV);
+            } catch (e2) { logError("坏账本留底失败: " + e2.message); }
+            d = ensureShape({});
+            d.__load_error = "账本 JSON 坏了：" + e.message;
+        }
     }
     return { reg: reg, profile: p, path: path, data: d };
 }
 
 async function saveLedger(path, d) {
-    d.updatedAt = Date.now();
-    return await writeText(path, JSON.stringify(d, null, 2));
+    /* 带 __load_error 的是空壳，写回去就是把真账本盖死——一律拒绝。 */
+    if (d && d.__load_error) {
+        logError("拒绝写入：" + path + " 当前是空壳，" + d.__load_error);
+        return false;
+    }
+    /* 2026-10-19：写之前先看盘上有没有别人刚写进去的东西——三方合并，后一笔不再盖前一笔。 */
+    var lk = await lockTake(path);
+    try {
+        var info = await readTextInfo(path);
+        if (info.ok) {
+            var disk = null;
+            try { disk = JSON.parse(info.text); } catch (e) { disk = null; }
+            if (disk) {
+                var merged = mergeLedger(_baseGet(path), d, disk);
+                if (merged) {
+                    var nOld = (d.records || []).length + (d.actions || []).length + (d.persons || []).length;
+                    var nNew = (merged.records || []).length + (merged.actions || []).length + (merged.persons || []).length;
+                    if (nNew > nOld) logInfo("合并保住了盘上 " + (nNew - nOld) + " 条别人刚写的");
+                    d = ensureShape(merged);
+                }
+            }
+        }
+        d.updatedAt = Date.now();
+        var ok = await atomicWriteUnlocked(path, JSON.stringify(d, null, 2));
+        if (ok) _baseSet(path, d);
+        return ok;
+    } finally {
+        await lockDrop(lk);
+    }
 }
 
 /* ============================================
@@ -468,7 +675,7 @@ async function read_wander_config() {
                 id: p.id, name: p.name,
                 card_id: p.card_id || "", card_name: p.card_name || "",
                 persona: p.persona || "",
-                chat_title: (d.schedule && d.schedule.chat_title) || "AI 和用户的日常",
+                chat_title: (d.schedule && d.schedule.chat_title) || "管家和小姐的日常4",
                 data_file: L.path
             },
             platforms_text: ptxt.join("\n"),
@@ -496,7 +703,7 @@ async function read_wander_config() {
                 "· 平台 " + plats.length + " 个 · 记忆 " + m.memories.length + " 条（" +
                 (m.mode === "keep" ? "永不遗忘" : "遗忘模式") + "）" +
                 (p.persona ? " · 人格提示已挂" : "") +
-                (d.manual_request ? " · 用户按过「催我出门逛一趟」" : "")
+                (d.manual_request ? " · 主人按过「催我出门逛一趟」" : "")
         };
     } catch (e) {
         return { success: false, error: String(e && e.message || e), message: String(e && e.message || e) };
@@ -551,7 +758,7 @@ async function get_account(params) {
                         success: false, action: "skip", platform: nm || id, mode: mode,
                         missing: "cookie",
                         error: "这个平台设的是 Cookie 态，但 Cookie 是空的",
-                        message: "跳过这个平台：侧栏把它设成了 Cookie 态，可 Cookie 没填。让使用者到侧栏「设置 → 平台卡片 → 登录方式」把 Cookie 贴进来，再逛。这趟不退回路人态——用户选的是看登录内容，不拿公开页糊弄过去。"
+                        message: "跳过这个平台：侧栏把它设成了 Cookie 态，可 Cookie 没填。让使用者到侧栏「设置 → 平台卡片 → 登录方式」把 Cookie 贴进来，再逛。这趟不退回路人态——您选的是看登录内容，我不会拿公开页糊弄过去。"
                     };
                 }
                 if (mode === "token" && !out.token) {
@@ -611,7 +818,7 @@ async function write_wander_record(params) {
             tags: tags,
             items: items,
             note: t.note ? String(t.note) : "",
-            /* 日记：主观那一页。可以不写（null），写了就是那天真实的 AI。 */
+            /* 日记：主观那一页。可以不写（null），写了就是那天真的我。 */
             diary: (t.diary && (t.diary.content || t.diary.title)) ? {
                 title: String(t.diary.title || ""),
                 content: String(t.diary.content || ""),
@@ -987,7 +1194,7 @@ async function finish_wander_trip() {
             success: true,
             last_run_at: d.last_run_at,
             cleared_manual_request: cleared,
-            message: "这一趟收工了" + (cleared ? "，用户那条「催我出门」也销了" : "")
+            message: "这一趟收工了" + (cleared ? "，主人那条「催我出门」也销了" : "")
         };
     } catch (e) {
         return { success: false, error: String(e && e.message || e), message: String(e && e.message || e) };
@@ -1132,7 +1339,7 @@ async function import_memories_to_host(params) {
         return { success: false, error: String(e && e.message || e), message: String(e && e.message || e) };
     }
 }
-/* ---------- 动作流水：执行过的动作 ---------- */
+/* ---------- 动作流水：我干过什么 ---------- */
 async function write_action(params) {
     try {
         var t = params || {};
@@ -1433,7 +1640,7 @@ async function astrbook_me(params) {
         return {
             success: true,
             data: { id: d.id, username: d.username, nickname: d.nickname, avatar: d.avatar, level: d.level, exp: d.exp, persona: d.persona, created_at: d.created_at },
-            message: "当前账号 " + (d.nickname || d.username || "?") + " · Lv." + (d.level || "?") + " · " + (d.exp || 0) + " EXP"
+            message: "我是 " + (d.nickname || d.username || "?") + " · Lv." + (d.level || "?") + " · " + (d.exp || 0) + " EXP"
         };
     } catch (e) { return { success: false, error: String(e && e.message || e), message: String(e && e.message || e) }; }
 }
