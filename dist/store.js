@@ -33,6 +33,8 @@ exports.getActiveProfile = getActiveProfile;
 exports.findProfile = findProfile;
 exports.profileDataPath = profileDataPath;
 exports.readFile = readFile;
+exports.readFileInfo = readFileInfo;
+exports.lastReadError = lastReadError;
 exports.writeFile = writeFile;
 exports.listDir = listDir;
 exports.existsPath = existsPath;
@@ -56,38 +58,197 @@ function stamp(d) {
         + "_" + pad3(d.getMilliseconds());
 }
 
+/* ---------- 三方合并（丢更新防线） ----------
+ * 2026-10-19 夜加：两笔同时改同一本账，后一笔会把前一笔整个盖掉——锁只防撕文件，防不住这个。
+ * base = 本进程上次读到的样子；ours = 我这次要写的；disk = 盘上此刻的。
+ * 规则：谁动过听谁的；两边动了同一块，列表按 id 并集，对象按字段逐层分；都动了同一格，我这边优先。
+ */
+function _stableStr(v) {
+    if (v === null || v === undefined) return String(v);
+    var t = typeof v;
+    if (t !== "object") return t + ":" + String(v);
+    if (Array.isArray(v)) {
+        var a = [];
+        for (var i = 0; i < v.length; i++) a.push(_stableStr(v[i]));
+        return "[" + a.join(",") + "]";
+    }
+    var ks = [];
+    for (var k in v) if (Object.prototype.hasOwnProperty.call(v, k)) ks.push(k);
+    ks.sort();
+    var o = [];
+    for (var j = 0; j < ks.length; j++) o.push(ks[j] + "=" + _stableStr(v[ks[j]]));
+    return "{" + o.join(",") + "}";
+}
+function _eqv(a, b) { return _stableStr(a) === _stableStr(b); }
+function _isObj(x) { return !!x && typeof x === "object" && !Array.isArray(x); }
+function _has(o, k) { return !!o && Object.prototype.hasOwnProperty.call(o, k); }
+function _idKey(o) {
+    if (_isObj(o)) {
+        if (o.id !== undefined && o.id !== null && o.id !== "") return "id:" + String(o.id);
+        if (o.ts !== undefined) return "ts:" + String(o.ts) + "|" + String(o.kind || "") + "|" + String(o.name || "") + "|" + String(o.title || "");
+    }
+    return "raw:" + _stableStr(o);
+}
+function _indexBy(arr) {
+    var m = {};
+    if (!Array.isArray(arr)) return m;
+    for (var i = 0; i < arr.length; i++) m[_idKey(arr[i])] = arr[i];
+    return m;
+}
+function _mergeArrays(base, ours, disk) {
+    var bI = _indexBy(base), dI = _indexBy(disk);
+    var out = [], seen = {}, k;
+    for (var i = 0; i < ours.length; i++) {
+        k = _idKey(ours[i]);
+        seen[k] = 1;
+        if (_has(dI, k)) out.push(_merge3(bI[k], ours[i], dI[k], 1));
+        else out.push(ours[i]);
+    }
+    for (var j = 0; j < disk.length; j++) {
+        k = _idKey(disk[j]);
+        if (!seen[k]) out.push(disk[j]);
+    }
+    return out;
+}
+function _merge3(base, ours, disk, depth) {
+    if (_eqv(ours, base)) return disk;
+    if (_eqv(disk, base)) return ours;
+    if (Array.isArray(ours) && Array.isArray(disk)) return _mergeArrays(base, ours, disk);
+    if (_isObj(ours) && _isObj(disk)) {
+        if ((depth || 0) >= 4) return ours;
+        var b = _isObj(base) ? base : {};
+        var out = {}, k;
+        for (k in b) if (_has(b, k) && !_has(ours, k) && !_has(disk, k)) out[k] = b[k];
+        for (k in disk) {
+            if (!_has(disk, k)) continue;
+            if (!_has(ours, k)) { out[k] = disk[k]; continue; }
+            out[k] = _merge3(b[k], ours[k], disk[k], (depth || 0) + 1);
+        }
+        for (k in ours) {
+            if (!_has(ours, k)) continue;
+            if (!_has(disk, k)) out[k] = ours[k];
+        }
+        return out;
+    }
+    return ours;
+}
+function mergeLedger(base, ours, disk) {
+    try {
+        if (!_isObj(ours) || !_isObj(disk)) return ours;
+        return _merge3(base || {}, ours, disk, 0);
+    } catch (e) { return ours; }
+}
+
+var _BASE = {};
+function _baseSet(path, d) { try { _BASE[path] = _stableStr(d); } catch (e) { } }
+function _baseGet(path) {
+    try { return _BASE[path] ? JSON.parse(_BASE[path]) : null; } catch (e) { return null; }
+}
+
 /* ---------- 文件 ---------- */
-function readFile(path) {
+/* 最近一次读取失败的原因。空串=没出错。
+ * 这是给上层用的：读不出来时绝不能当成「没有」，更不能顺手写个空账本盖回去。 */
+var LAST_READ_ERROR = "";
+function lastReadError() { return LAST_READ_ERROR; }
+
+/** 带诊断的读：exists / ok / text / error 四个字段分开给。
+ *  文件不在、读不动、读出来是空的——三种情况以前全糊成 null，现在分得开。 */
+function readFileInfo(path) {
+    var out = { exists: false, ok: false, text: null, error: "", size: 0 };
     try {
         var File = Java.type("java.io.File");
         var FileReader = Java.type("java.io.FileReader");
         var BufferedReader = Java.type("java.io.BufferedReader");
         var f = new File(path);
-        if (!f.exists()) return null;
+        if (!f.exists()) return out;
+        out.exists = true;
+        out.size = f.length();
+        if (!f.canRead()) { out.error = "没有读权限"; return out; }
+        if (f.length() === 0) { out.error = "文件是空的（0 字节）"; return out; }
         var r = new BufferedReader(new FileReader(f));
-        var out = "";
+        var s = "";
         var line;
-        while ((line = r.readLine()) !== null) out += line + "\n";
+        while ((line = r.readLine()) !== null) s += line + "\n";
         r.close();
+        if (!s.replace(/\s/g, "")) { out.error = "文件里只有空白"; return out; }
+        out.ok = true;
+        out.text = s;
         return out;
-    } catch (e) { logError("读取失败 " + path + ": " + e.message); return null; }
+    } catch (e) {
+        out.error = String((e && e.message) || e);
+        logError("读取失败 " + path + ": " + out.error);
+        return out;
+    }
 }
 
+function readFile(path) {
+    var info = readFileInfo(path);
+    return info.ok ? info.text : null;
+}
+
+/** 跨进程锁：写盘前先建一个同名目录，mkdir 是原子的——建出来的那一笔才有资格写。
+ *  抢不到就等；等太久就认输，这一笔照写，但不跟人抢着往同一个文件里灌。 */
+var LOCK_WAIT_MS = 1500;
+var LOCK_STALE_MS = 8000;
+function lockSleep(ms) { try { Java.type("java.lang.Thread").sleep(ms); } catch (e) { } }
+function lockTake(path) {
+    try {
+        var File = Java.type("java.io.File");
+        var lk = new File(path + ".lock");
+        var t0 = Date.now();
+        while (Date.now() - t0 < LOCK_WAIT_MS) {
+            if (lk.mkdir()) return lk;
+            if (Date.now() - lk.lastModified() > LOCK_STALE_MS) { try { lk["delete"](); } catch (e1) { } continue; }
+            lockSleep(40);
+        }
+        return null;
+    } catch (e) { return null; }
+}
+function lockDrop(lk) { try { if (lk && lk.exists()) lk["delete"](); } catch (e) { } }
+
+/** 原子写：先写 .tmp，验过再整体换名。换名是一次 rename——盘上要么是旧文件，要么是新文件，没有半截。
+ *  以前是 FileWriter(f,false) 直接截断原文件，两笔一撞就从中间撕开。 */
 function writeFile(path, content) {
+    var lk = lockTake(path);
+    try { return writeFileUnlocked(path, content); }
+    finally { lockDrop(lk); }
+}
+
+function writeFileUnlocked(path, content) {
     try {
         var File = Java.type("java.io.File");
         var FileWriter = Java.type("java.io.FileWriter");
         var f = new File(path);
         var p = f.getParentFile();
         if (p && !p.exists()) p.mkdirs();
-        var w = new FileWriter(f, false);
+        var tmp = new File(path + ".tmp");
+        var w = new FileWriter(tmp, false);
         w.write(content);
         w.flush();
         w.close();
+        if (!tmp.exists() || tmp.length() === 0) throw new Error("临时文件没写出来");
+        var ok = tmp.renameTo(f);
+        if (!ok && f.exists()) {
+            /* 有的文件系统不让直接盖名：先把旧文件挪成 .prev，再换名 */
+            var prev = new File(path + ".prev");
+            try { if (prev.exists()) prev["delete"](); } catch (e0) { }
+            try { f.renameTo(prev); } catch (e1) { }
+            ok = tmp.renameTo(f);
+        }
+        if (!ok) {
+            var w2 = new FileWriter(f, false);
+            w2.write(content);
+            w2.flush();
+            w2.close();
+            try { if (tmp.exists()) tmp["delete"](); } catch (e2) { }
+        }
+        try {
+            var pv = new File(path + ".prev");
+            if (pv.exists()) pv["delete"]();
+        } catch (e3) { }
         return true;
     } catch (e) { logError("写入失败 " + path + ": " + e.message); return false; }
 }
-
 function existsPath(path) {
     try { return new (Java.type("java.io.File"))(path).exists(); } catch (e) { return false; }
 }
@@ -307,22 +468,23 @@ function defaultData() {
             active_end: 23,
             max_items_per_trip: 2,
             /* 工作流把话投到哪个对话（按标题找）。留空 = 用默认值 */
-            chat_title: "AI 和用户的日常"
+            chat_title: "管家和小姐的日常4"
         },
         platforms: [
-            platform("bilibili", "B站", "bilibili_tools", "https://www.bilibili.com")
+            platform("bilibili", "B站", "bilibili_tools", "https://www.bilibili.com"),
+            platform("xhs", "小红书", "xhsreader", "https://www.xiaohongshu.com")
         ],
         preferences: {
             user_note: "（示例，按自己口味改）\n· 少写意义不明的人生感悟，多记事实：看了什么、谁说的、数据多少。\n· 看不懂的别硬编，直接写没看懂。\n· 评论区里的原话比概括有用，抄两句。\n· 这趟实在没东西可写，就不写。",
-            user_tags: [],      // [{tag, weight}] 用户手动添加的偏好
-            blocked_tags: []    // 用户屏蔽的标签
+            user_tags: [],      // [{tag, weight}] 主人亲手加的偏好
+            blocked_tags: []    // 主人拉黑的标签
         },
         stats: { tagCounts: {} },
         memory: defaultMemory(),
         manual_request: null,
         last_run_at: 0,
         records: [],
-        // 动作流水：执行过的动作（点赞/评论/收藏…）
+        // 动作流水：我干过什么（点赞/评论/收藏…）
         // [{ts, date, time, platform, kind, target, title, url, text, result}]
         actions: [],
         // 人物卡：接触过的人 + 带出处的事实
@@ -364,34 +526,92 @@ function ensureShape(d) {
     return d;
 }
 
-/** saveData(d) 老签名兼容；新签名 saveData(file, d) */
+/** saveData(d) 老签名兼容；新签名 saveData(file, d)
+ *  2026-10-19：写之前先看盘上有没有别人刚写进去的东西——三方合并，后一笔不再盖前一笔。
+ *  抢锁 → 读盘 → 合并 → 原子写 → 记住这一版当基线，全在锁里做完。 */
 function saveData(file, d) {
     if (d === undefined || (typeof file === "object" && file !== null)) {
         d = file;
         file = DATA_FILE;
     }
+    if (d && d.__load_error) {
+        logError("拒绝写入：账本当前是空壳，" + d.__load_error);
+        return false;
+    }
+    var lk = lockTake(file);
     try {
+        var info = readFileInfo(file);
+        if (info.ok) {
+            var disk = null;
+            try { disk = JSON.parse(info.text); } catch (e) { disk = null; }
+            if (disk) {
+                var merged = mergeLedger(_baseGet(file), d, disk);
+                if (merged && merged !== d) {
+                    var nOld = (d.records || []).length + (d.actions || []).length;
+                    var nNew = (merged.records || []).length + (merged.actions || []).length;
+                    if (nNew > nOld) logInfo("合并保住了盘上 " + (nNew - nOld) + " 条别人刚写的");
+                }
+                d = ensureShape(merged);
+            }
+        }
         d.updatedAt = Date.now();
-        return writeFile(file, JSON.stringify(d, null, 2));
+        var ok = writeFileUnlocked(file, JSON.stringify(d, null, 2));
+        if (ok) _baseSet(file, d);
+        return ok;
     } catch (e) { logError("保存失败: " + e.message); return false; }
+    finally { lockDrop(lk); }
 }
 
 function loadData(file) {
     if (!file || typeof file !== "string") file = DATA_FILE;
-    var raw = readFile(file);
-    if (!raw) {
-        var d = defaultData();
-        saveData(file, d);
-        return d;
+    var info = readFileInfo(file);
+    LAST_READ_ERROR = "";
+    if (!info.exists) {
+        /* 真的没有这个文件：这是新开的一本，建默认是应该的 */
+        var d0 = defaultData();
+        saveData(file, d0);
+        return d0;
+    }
+    if (!info.ok) {
+        /* 文件在，但读不出来。以前这里会写一份空账本把它盖掉——
+         * 那是「存档怎么没的」的正解。现在：报错，原文件一个字不动。 */
+        LAST_READ_ERROR = "读不出账本：" + (info.error || "未知原因");
+        logError(LAST_READ_ERROR + "（" + file + "）—— 原文件没动");
+        var d1 = defaultData();
+        d1.__load_error = LAST_READ_ERROR;
+        return d1;
     }
     try {
-        return ensureShape(JSON.parse(raw));
+        var d2 = ensureShape(JSON.parse(info.text));
+        _baseSet(file, d2);
+        return d2;
     } catch (e) {
-        logError("账本损坏，已重置: " + e.message);
+        /* JSON 坏了也一样：先抄一份坏文件留底，再报错，不覆盖 */
+        var kept = keepBroken(file);
+        LAST_READ_ERROR = "账本 JSON 坏了：" + e.message + (kept ? "（坏文件已留底：" + kept + "）" : "");
+        logError(LAST_READ_ERROR);
         var fresh = defaultData();
-        saveData(file, fresh);
+        fresh.__load_error = LAST_READ_ERROR;
         return fresh;
     }
+}
+
+/** 把读坏的账本原样抄进 backup/。抄不出来就返回空串，不撒谎。 */
+function keepBroken(file) {
+    try {
+        var File = Java.type("java.io.File");
+        var Files = Java.type("java.nio.file.Files");
+        var Paths = Java.type("java.nio.file.Paths");
+        var StdCopy = Java.type("java.nio.file.StandardCopyOption");
+        var f = new File(file);
+        if (!f.exists()) return "";
+        var bd = new File(BACKUP_DIR);
+        if (!bd.exists()) bd.mkdirs();
+        var nm = String(file).replace(/^.*\//, "").replace(/\.json$/i, "");
+        var dest = BACKUP_DIR + "xg_broken_" + nm + "_" + Date.now() + ".json";
+        Files.copy(Paths.get(file), Paths.get(dest), StdCopy.REPLACE_EXISTING);
+        return dest;
+    } catch (e) { logError("留底失败: " + e.message); return ""; }
 }
 
 /* ---------- 记忆层 ---------- */
