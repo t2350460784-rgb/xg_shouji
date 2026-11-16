@@ -904,28 +904,18 @@ async function write_wander_record(params) {
         var L = await loadLedger();
         var d = L.data;
         var now = new Date();
-        var tags = [], tagTop = "";
+        var tags = [];
         if (Array.isArray(t.tags)) {
             for (var i = 0; i < t.tags.length; i++) {
                 var tg = String(t.tags[i] || "").trim();
                 if (!tg) continue;
-                if (TAG_DROP[tg]) continue;
-                if (TAG_ALIAS[tg]) {
-                    if (!tagTop) tagTop = tg;
-                    if (tags.indexOf(tg) < 0) tags.push(tg);
-                    continue;
-                }
                 if (tags.indexOf(tg) < 0) tags.push(tg);
             }
         }
-        /* 没给一级大类，就从二级里兑一个出来 */
-        if (!tagTop) {
-            for (var g0 = 0; g0 < tags.length && !tagTop; g0++) tagTop = tagGroup(tags[g0]);
-        }
-        if (!tagTop) tagTop = "别的";
-        /* 一级大类必须排第一：统计和展示都认这一位 */
-        if (tags.indexOf(tagTop) >= 0) tags.splice(tags.indexOf(tagTop), 1);
-        tags.unshift(tagTop);
+        /* 标签原样存：写什么就是什么，不插大类、不塞兜底、不重排。
+           大类只在统计里现算——回写等于改别人的笔迹（0.4.78） */
+        var tagTop = "";
+        for (var g0 = 0; g0 < tags.length && !tagTop; g0++) tagTop = tagGroup(tags[g0]);
         var ts = now.getTime();
         /* 心情：这趟逛得什么感觉，落账时自己写一个词（0.4.74） */
         var mV = Number(t.valence);
@@ -968,7 +958,7 @@ at: ts } : null,
         };
         d.records.push(rec);
         /* 统计只记一级大类，二级标签不进计数 */
-        d.stats.tagCounts[tagTop] = (Number(d.stats.tagCounts[tagTop]) || 0) + 1;
+        if (tagTop) d.stats.tagCounts[tagTop] = (Number(d.stats.tagCounts[tagTop]) || 0) + 1;
 
         // 同步留一条「逛时印象」进记忆库
         var brief = [];

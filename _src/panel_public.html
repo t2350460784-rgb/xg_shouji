@@ -521,7 +521,7 @@ function visibleRecords(){
     var tc=tagCounts();
     function heat(r){
       var t=r.tags||[], m=0;
-      for(var i=0;i<t.length;i++) m=Math.max(m,Number(tc[t[i]])||0);
+      for(var i=0;i<t.length;i++){ var g=tagGroup(t[i])||t[i]; m=Math.max(m,Number(tc[g])||0); }
       return m;
     }
     recs.sort(function(a,b){
