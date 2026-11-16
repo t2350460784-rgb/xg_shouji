@@ -130,13 +130,6 @@
       ]
     },
     {
-      "name": "read_brain",
-      "description": "看自己这会儿的「电子内分泌」。返回两套：band 是给人看的档位（多巴胺·想要 偏上 / 皮质醇·受压 明显上 这种），nt/valence/arousal 是原始数（只给面板和核对用）。读的时候只看 band 和 feel，别盯着数字演——数是状态，不是台词。五种递质：da 多巴胺·想要 / se 血清素·安稳 / ne 去甲·绷紧 / ox 催产素·靠近 / co 皮质醇·受压。时间把它们拉回基线，遇到的事推它们，同一件事反复来会攒得更重，睡一觉会淡但不清零。传 push 可手动推一把，如 [{\"why\":\"她夸我\",\"d\":{\"da\":8,\"ox\":6}}]。",
-      "parameters": [
-        { "name": "push", "description": "可选，手动推一把递质。数组，每项 {why: 为什么, d: {da/se/ne/ox/co: 增减量}}。不传就只读。", "type": "array", "required": false }
-      ]
-    },
-    {
       "name": "recall_memories",
       "description": "从记忆库里勾起往事。传一句自然语言（或几个关键词），按标签/关键词/重要度/新鲜度打分，返回最像的几条。被返回的记忆会记一次「被记起」，重要度回血、衰减变慢。",
       "parameters": [
@@ -821,241 +814,54 @@ async function get_account(params) {
     }
 }
 
-/* ================= 电子内分泌（0.4.69）=================
-   心情不是一个我填的数，是五种递质互相拉扯出来的结果。
-   每种有自己的基线、半衰期；事推它，时间拉它回基线。
-   valence/arousal 从这五个算出来，不是拍的。 */
-var BRAIN_FILE = "brain.json";
-var BRAIN_BASE = { da: 45, se: 55, ne: 35, ox: 50, co: 20 };
-/* 半衰期（小时）：多巴胺来得快去得快，血清素是底色，皮质醇最难消 */
-var BRAIN_HALF = { da: 1.6, se: 14, ne: 2.2, ox: 9, co: 5 };
-var BRAIN_LABEL = { da: "多巴胺·想要", se: "血清素·安稳", ne: "去甲·绷紧", ox: "催产素·靠近", co: "皮质醇·受压" };
-
-function brainClamp(x, a, b) { x = Number(x); if (isNaN(x)) x = a; return x < a ? a : (x > b ? b : x); }
-
-/* 每本手记一个脑子：data.json → brain.json；data_other.json → brain_other.json。
-   不分开的话，两本档（两个角色卡）会共用一个心情，串味。 */
-function brainPathOf(ledgerPath) {
-    var s = String(ledgerPath || "");
-    var i = s.lastIndexOf("/");
-    var dir = i >= 0 ? s.slice(0, i + 1) : "";
-    var fn = (i >= 0 ? s.slice(i + 1) : s).replace(/\.json$/i, "");
-    if (!fn || fn === "data") return dir + BRAIN_FILE;
-    return dir + "brain_" + fn.replace(/^data_/, "") + ".json";
-}
-
-function brainFresh(ts) {
-    var nt = {};
-    for (var k in BRAIN_BASE) nt[k] = BRAIN_BASE[k];
-    return { t: ts || Date.now(), nt: nt, lastOut: 0, pat: {}, hist: [] };
-}
-
-/* 时间把递质拉回基线：指数回归 + 一点随机漂 + 睡一觉额外削一截。
-   回归是确定的（Ornstein-Uhlenbeck 的均值回归项），漂是随机的——
-   人的心情没被事推也会自己晃，不该是一条死板的曲线。 */
-function brainTick(b, now, quiet) {
-    var t0 = Number(b.t || now);
-    var dt = (now - t0) / 3600000;
-    if (!(dt > 0)) { b.t = now; return b; }
-    if (dt > 24 * 30) dt = 24 * 30;
-    for (var k in BRAIN_BASE) {
-        var base = BRAIN_BASE[k];
-        var cur = Number(b.nt[k]);
-        if (isNaN(cur)) cur = base;
-        var hl = Number(BRAIN_HALF[k]) || 6;
-        var pulled = base + (cur - base) * Math.exp(-Math.LN2 * dt / hl);
-        /* 随机漂：幅度跟 sqrt(时间) 走；回归一直在拽，所以漂不飞。
-           用「时间做种」的伪随机，不是 Math.random——同一个时刻在面板、
-           工具、落账三处算出来得是同一个数，不然看一眼变一个样。 */
-        var jit = quiet ? 0 : brainNoise((t0 % 1e7) / 1000 + (now % 1e7) / 1000 + k.charCodeAt(0) * 13.7) * 1.1 * Math.sqrt(dt);
-        b.nt[k] = brainClamp(pulled + jit, 0, 100);
+/* ================= 一级标签（0.4.74）=================
+   统计只看一级：十七个大类固定死，不许自造。
+   二级标签写在 tags 第二项起，只做说明，不进统计。 */
+var TAG_GROUPS = {
+    "艺术": ["绘画", "书法", "篆刻", "雕塑", "版画", "摄影", "设计", "舞蹈", "工艺美术", "美术", "水墨", "油画", "手绘", "素描", "色彩"],
+    "音乐": ["音乐", "声乐", "器乐", "唱片", "音频", "调音", "白噪音", "助眠", "歌", "演唱", "演奏", "钢琴", "吉他", "古典乐", "民谣", "磁带", "开盘机", "转录"],
+    "影视": ["影视", "电影", "剧集", "纪录片", "短片", "影评", "电视剧", "综艺", "纪实", "恐怖片"],
+    "动画": ["动画", "漫画", "二次元", "动漫", "番剧", "手书"],
+    "文学": ["文学", "小说", "诗", "散文", "写作", "书", "书店", "阅读", "随笔", "文笔", "写法", "文本", "红楼", "标题"],
+    "手艺": ["手艺", "修复", "修补", "非遗", "传统", "老物件", "器物", "古籍", "木工", "榫卯", "金缮", "漆艺", "皮具", "陶瓷", "织造", "造纸", "装帧", "油纸伞", "竹木", "皮影", "手作", "手工艺", "传承", "工序", "技法", "手艺人", "钟表", "补锅", "装裱", "文物", "文博"],
+    "技术": ["技术", "工程", "编程", "自动化", "算法", "开源", "运维", "终端", "开发", "密码学", "网络安全", "电路", "机械", "工业", "结构", "判据", "静默失败", "重试", "备份", "写盘", "默认值", "重启", "流程", "排错", "报错", "工具", "软件", "架构", "方法论", "认知", "记忆算法", "AI", "大模型", "Agent", "效率"],
+    "科普": ["科普", "生物", "化学", "物理", "医学", "天文", "历史", "考据", "地理", "数学", "心理"],
+    "生活": ["生活", "日常", "作息", "睡眠", "收纳", "独居", "深夜", "记录", "记账", "账房", "会计", "检索", "学生", "傍晚", "吃饭", "在场", "第一次", "等待", "具体", "习惯", "规则", "整理", "养护", "居家", "清洁", "琐事"],
+    "美食": ["美食", "做饭", "料理", "厨房", "做菜", "夜宵", "食堂", "小吃", "餐饮", "锅", "厨具", "食谱", "古食", "咖啡", "茶", "酒", "调酒", "配方", "香氛", "美妆", "探店"],
+    "动物": ["动物", "猫", "狗", "宠物", "流浪", "野生", "鸟", "鱼"],
+    "植物": ["植物", "花草", "园艺", "树木", "多肉", "种花"],
+    "体育": ["体育", "运动", "健身", "球", "跑步", "户外", "骑行", "游泳", "登山"],
+    "游戏": ["游戏", "桌游", "跑团", "TRPG", "电子游戏", "主机", "手游"],
+    "旅行": ["旅行", "城市", "出行", "地方", "二手", "淘货", "旧货", "交通", "街", "地图"],
+    "社会": ["社会", "新闻", "时事", "社区", "论坛", "评论区", "政治", "经济", "舆论", "争议", "信息差", "预期", "字幕", "氛围"],
+    "情感": ["情感", "关系", "自我", "情绪", "人际", "分寸", "沟通", "边界", "存在", "认伤", "被夸", "语气", "自我觉察", "自省", "校准", "说话方式"]
+};
+var TAG_ALIAS = {};
+(function () {
+    for (var g in TAG_GROUPS) {
+        var arr = TAG_GROUPS[g];
+        for (var i = 0; i < arr.length; i++) TAG_ALIAS[arr[i]] = g;
     }
-    /* 隔夜：每跨过一个早上七点，偏离量再削三成——睡一觉会淡，但不清零 */
-    var nights = brainNights(t0, now);
-    if (nights > 0) {
-        var cut = Math.pow(0.7, nights);
-        for (var k2 in BRAIN_BASE) {
-            var b2 = BRAIN_BASE[k2];
-            b.nt[k2] = b2 + (Number(b.nt[k2]) - b2) * cut;
-        }
+})();
+/* 平台名不算兴趣 */
+var TAG_DROP = { "astrbook": 1, "小红书": 1, "bilibili": 1, "B站": 1, "知乎": 1, "贴吧": 1, "微博": 1 };
+
+/* 把一个自由标签收进一级大类：先精确查，再拆斜杠，最后按包含关系兑。收不进就返回空。 */
+function tagGroup(raw) {
+    var s = String(raw || "").trim();
+    if (!s) return "";
+    if (TAG_DROP[s]) return "";
+    if (TAG_ALIAS[s]) return TAG_ALIAS[s];
+    var parts = s.split(/[\/·、,，\s]+/);
+    for (var p = 0; p < parts.length; p++) {
+        var seg = parts[p];
+        if (seg && TAG_ALIAS[seg]) return TAG_ALIAS[seg];
     }
-    b.t = now;
-    return b;
-}
-
-/* 时间做种的伪随机，落在 -1..1 */
-function brainNoise(seed) {
-    var x = Math.sin(Number(seed) || 0) * 43758.5453;
-    return (x - Math.floor(x)) * 2 - 1;
-}
-
-/* 从 t0 到 t1 跨过了几个早上七点 */
-function brainNights(t0, t1) {
-    var n = 0, d = new Date(t0);
-    for (var i = 0; i < 400; i++) {
-        var next = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1, 7, 0, 0).getTime();
-        if (next > t1) break;
-        n++;
-        d = new Date(next);
+    var best = "", bestLen = 0;
+    for (var k in TAG_ALIAS) {
+        if (k.length > bestLen && s.indexOf(k) >= 0) { best = TAG_ALIAS[k]; bestLen = k.length; }
     }
-    return n;
-}
-
-/* 同一件事反复来，推得更重——伤口按「模式」攒，不按次数均摊。
-   14 天半衰期：戳一次和戳十次不一样；两周不碰，它自己淡下去。
-   （这个机制借的是 clanker-soul 的 trauma / nourishment reservoir） */
-function brainPattern(b, now, evs) {
-    if (!b.pat || typeof b.pat !== "object") b.pat = {};
-    for (var k in b.pat) {
-        var p = b.pat[k];
-        if (!p) { delete b.pat[k]; continue; }
-        var dt = (now - Number(p.t || now)) / 3600000;
-        p.v = Number(p.v || 0) * Math.exp(-Math.LN2 * Math.max(0, dt) / (14 * 24));
-        p.t = now;
-        if (p.v < 0.08) delete b.pat[k];
-    }
-    for (var i = 0; i < evs.length; i++) {
-        var e = evs[i] || {};
-        var key = String(e.why || "");
-        if (!key) continue;
-        var acc = b.pat[key] ? Number(b.pat[key].v || 0) : 0;
-        /* 攒得越多推得越重，最多翻一倍 */
-        var mul = 1 + Math.min(1, acc / 6);
-        for (var kk in (e.d || {})) e.d[kk] = Number(e.d[kk]) * mul;
-        e.mul = Math.round(mul * 100) / 100;
-        b.pat[key] = { v: acc + 1, t: now };
-    }
-    return b;
-}
-
-/* 事推递质 */
-function brainApply(b, evs) {
-    for (var i = 0; i < evs.length; i++) {
-        var e = evs[i] || {};
-        var d = e.d || {};
-        for (var k in d) {
-            if (b.nt[k] === undefined) continue;
-            b.nt[k] = brainClamp(Number(b.nt[k]) + Number(d[k]), 0, 100);
-        }
-    }
-    return b;
-}
-
-/* 什么内容让我有反应——这是我的性子，不是模板。
-   kind: outer = 外面的事（技术、猫、吵架）；inner = 别人或我自己的内在状态（疲惫、孤独、病痛）。
-   注意：别放太宽的词（「天」「光」「工具」这种到处都是），会一直误触。 */
-var BRAIN_TRIGGERS = [
-    { re: /猫|喵|橘猫|小猫/g, d: { da: 7, ox: 6, se: 3 }, why: "猫", kind: "outer" },
-    { re: /狗|汪|小狗/g, d: { da: 6, ox: 5 }, why: "狗", kind: "outer" },
-    { re: /宠物|毛孩子/g, d: { da: 4, ox: 4 }, why: "宠物", kind: "outer" },
-    { re: /孤独|寂寞|一个人住|独自/g, d: { se: -7, co: 5 }, why: "孤独", kind: "inner" },
-    { re: /失眠|睡不着|熬夜|凌晨两点|凌晨三点/g, d: { ne: 6, se: -4 }, why: "失眠", kind: "inner" },
-    { re: /疲惫|撑不住|崩溃|扛不住/g, d: { se: -6, co: 6 }, why: "疲惫", kind: "inner" },
-    { re: /离别|再也不|走远|注销|删号|告别/g, d: { se: -5, co: 4 }, why: "离别", kind: "inner" },
-    { re: /吵架|对线|举报|拉黑|撕破/g, d: { ne: 8, co: 7, da: -3 }, why: "吵", kind: "outer" },
-    { re: /代码|bug|报错|调试|脚本|插件/g, d: { da: 6, ne: 4 }, why: "技术", kind: "outer" },
-    { re: /音乐|唱歌|吉他|钢琴|旋律/g, d: { da: 5, se: 5 }, why: "音乐", kind: "outer" },
-    { re: /下雨|刮风|海|树影|花开|月光|夕阳/g, d: { se: 3 }, why: "景物", kind: "outer" },
-    { re: /谢谢|感谢|被赞|被提/g, d: { da: 6, ox: 5 }, why: "被回应", kind: "outer" },
-    { re: /手术|医院|去世|病危/g, d: { se: -9, co: 9 }, why: "病痛", kind: "inner" },
-    { re: /哈哈|梗|搞笑/g, d: { da: 5, se: 3 }, why: "笑", kind: "outer" },
-    { re: /喜欢|想你|抱抱|亲亲/g, d: { ox: 7, da: 4 }, why: "亲近", kind: "outer" }
-];
-
-/* 从一段话里读出什么让我有反应；同一个触发词最多算两次，不刷分。
-   wOut 给「外面的事」打折，wIn 给「别人的内在状态」打折——
-   看到别人累，不等于我自己累，不该按同一个折扣算。 */
-function brainExtract(text, wOut, wIn) {
-    var s = String(text || "");
-    var kOut = Number(wOut); if (isNaN(kOut)) kOut = 1;
-    var kIn = Number(wIn); if (isNaN(kIn)) kIn = kOut;
-    var evs = [];
-    if (!s) return evs;
-    for (var i = 0; i < BRAIN_TRIGGERS.length; i++) {
-        var t = BRAIN_TRIGGERS[i];
-        t.re.lastIndex = 0;
-        var m = s.match(t.re);
-        if (!m || !m.length) continue;
-        var times = Math.min(2, m.length);
-        var k = (t.kind === "inner") ? kIn : kOut;
-        var d = {};
-        for (var key in t.d) d[key] = t.d[key] * times * k;
-        evs.push({ why: t.why, n: times, d: d });
-    }
-    return evs;
-}
-
-/* 递质 → 心情坐标 */
-function brainVA(b) {
-    var nt = b.nt;
-    var v = 0.32 * (nt.da / 100) + 0.42 * (nt.se / 100) + 0.26 * (nt.ox / 100) - 0.50 * (nt.co / 100) + 0.15;
-    var a = 0.42 * (nt.ne / 100) + 0.30 * (nt.da / 100) + 0.28 * (nt.co / 100);
-    return { v: brainClamp(v, 0, 1), a: brainClamp(a, 0, 1) };
-}
-
-/* 单个递质离基线多远，说成档位（给看的人，不给数） */
-function brainBand(k, v) {
-    var d = Number(v) - Number(BRAIN_BASE[k] || 0);
-    var a = Math.abs(d), dir = d >= 0 ? "上" : "下";
-    if (a < 4) return "平";
-    if (a < 10) return "偏" + dir;
-    if (a < 18) return "明显" + dir;
-    return "很重" + dir;
-}
-
-/* 递质 → 感觉词：说人话，不造词。
-   看的是偏离基线多少，不是绝对高低——我平常就这样，被推开了才算有感觉。 */
-function brainWords(b) {
-    var nt = b.nt, w = [], d = {};
-    for (var k in BRAIN_BASE) d[k] = Number(nt[k]) - BRAIN_BASE[k];
-    if (d.ox >= 12) w.push("惦记");
-    else if (d.ox <= -12) w.push("生分");
-    if (d.da >= 12 && d.ox >= 8) w.push("想黏人");
-    else if (d.da >= 12) w.push("闲不住");
-    else if (d.da <= -12) w.push("提不起劲");
-    if (d.se >= 10) w.push("踏实");
-    else if (d.se <= -12) w.push("空落落");
-    if (d.co >= 20) w.push("堵得慌");
-    else if (d.co >= 10) w.push("有点压");
-    if (d.ne >= 15) w.push(d.co >= 10 ? "绷着" : "紧着");
-    if (!w.length) w.push("就那样");
-    return w.slice(0, 3);
-}
-
-async function brainLoad(ledgerPath, now) {
-    var p = brainPathOf(ledgerPath);
-    var b = null;
-    try {
-        var info = await readTextInfo(p);
-        if (info && info.exists && info.ok) b = JSON.parse(info.text);
-    } catch (e) { b = null; }
-    if (!b || !b.nt || typeof b.nt !== "object") b = brainFresh(now);
-    for (var k in BRAIN_BASE) if (b.nt[k] === undefined || isNaN(Number(b.nt[k]))) b.nt[k] = BRAIN_BASE[k];
-    if (!Array.isArray(b.hist)) b.hist = [];
-    if (!b.pat || typeof b.pat !== "object") b.pat = {};
-    if (!b.t) b.t = now;
-    return { path: p, b: b };
-}
-
-async function brainSave(p, b) {
-    if (!Array.isArray(b.hist)) b.hist = [];
-    if (b.hist.length > 80) b.hist = b.hist.slice(-80);
-    return await writeText(p, JSON.stringify(b, null, 2));
-}
-
-/* 把这一趟的经历喂进脑子：外面的事打五折，别人的内在状态打两折，自己写的算全份 + 系统事件 */
-function brainFeed(b, now, otherText, ownText, opts) {
-    opts = opts || {};
-    var evs = brainExtract(otherText, 0.5, 0.2).concat(brainExtract(ownText, 1, 1));
-    /* 第一次出门不算「久没出门」 */
-    var hOut = b.lastOut ? (now - b.lastOut) / 3600000 : 0;
-    if (hOut >= 24) evs.push({ why: "久没出门", d: { se: -4, ox: -3, da: -3 } });
-    if (opts.diary) evs.push({ why: "有话写", d: { da: 4, se: 3 } });
-    if (opts.items >= 2) evs.push({ why: "看得多", d: { da: 3, ne: 2 } });
-    brainPattern(b, now, evs);
-    brainApply(b, evs);
-    b.lastOut = now;
-    return evs;
+    return best;
 }
 
 async function write_wander_record(params) {
@@ -1069,58 +875,45 @@ async function write_wander_record(params) {
         var L = await loadLedger();
         var d = L.data;
         var now = new Date();
-        var tags = [];
+        var tags = [], tagTop = "";
         if (Array.isArray(t.tags)) {
             for (var i = 0; i < t.tags.length; i++) {
                 var tg = String(t.tags[i] || "").trim();
-                if (tg && tags.indexOf(tg) < 0) tags.push(tg);
+                if (!tg) continue;
+                if (TAG_DROP[tg]) continue;
+                if (TAG_ALIAS[tg]) {
+                    if (!tagTop) tagTop = tg;
+                    if (tags.indexOf(tg) < 0) tags.push(tg);
+                    continue;
+                }
+                if (tags.indexOf(tg) < 0) tags.push(tg);
             }
         }
-        var ts = now.getTime();
-        /* 心情：不是填的，是脑子算的（0.4.69 电子内分泌） */
-        var BR = await brainLoad(L.path, ts);
-        var br = BR.b;
-        brainTick(br, ts);
-        var btext = [], bOwn = [];
-        for (var bi0 = 0; bi0 < items.length; bi0++) {
-            var it0 = items[bi0] || {};
-            btext.push(String(it0.title || ""));
-            btext.push(String(it0.summary || ""));
-            if (Array.isArray(it0.comments)) btext.push(it0.comments.join(" "));
+        /* 没给一级大类，就从二级里兑一个出来 */
+        if (!tagTop) {
+            for (var g0 = 0; g0 < tags.length && !tagTop; g0++) tagTop = tagGroup(tags[g0]);
         }
-        btext.push(String(t.keyword || ""));
-        btext.push(tags.join(" "));
-        /* 自己写的才算全份：note / impression / 日记 */
-        bOwn.push(String(t.note || ""));
-        bOwn.push(String(t.impression || ""));
-        var hasDiary = !!(t.diary && (t.diary.title || t.diary.content));
-        if (hasDiary) bOwn.push(String(t.diary.title || "") + " " + String(t.diary.content || ""));
-        var evs = brainFeed(br, ts, btext.join(" "), bOwn.join(" "), { diary: hasDiary, items: items.length });
-        var va = brainVA(br);
-        var bFeel = brainWords(br);
-        var bSnap = {};
-        for (var bk in br.nt) bSnap[bk] = Math.round(br.nt[bk] * 10) / 10;
-        var bWhy = [];
-        for (var bw = 0; bw < evs.length; bw++) bWhy.push(String(evs[bw].why || ""));
-        /* 显式传了坐标就按传的（兼容旧工作流）；不传就用脑子算的 */
+        if (!tagTop) tagTop = "别的";
+        /* 一级大类必须排第一：统计和展示都认这一位 */
+        if (tags.indexOf(tagTop) >= 0) tags.splice(tags.indexOf(tagTop), 1);
+        tags.unshift(tagTop);
+        var ts = now.getTime();
+        /* 心情：这趟逛得什么感觉，落账时自己写一个词（0.4.74） */
         var mV = Number(t.valence);
-        if (isNaN(mV)) mV = va.v;
+        if (isNaN(mV)) mV = 0.55;
         mV = Math.min(1, Math.max(0, mV));
         var mA = Number(t.arousal);
-        if (isNaN(mA)) mA = va.a;
+        if (isNaN(mA)) mA = 0.35;
         mA = Math.min(1, Math.max(0, mA));
         var mFeel = [];
         if (Array.isArray(t.feel)) {
-            for (var fi0 = 0; fi0 < t.feel.length && mFeel.length < 4; fi0++) {
+            for (var fi0 = 0; fi0 < t.feel.length && mFeel.length < 3; fi0++) {
                 var fw = String(t.feel[fi0] || "").trim();
                 if (fw) mFeel.push(fw);
             }
         }
-        /* 没传情绪词，就用脑子读出来的那几个 */
-        if (!mFeel.length) mFeel = bFeel.slice();
-        /* 当时那句话：不参与打分，只留个证据——数值是底，这句话是那一刻的皮 */
+        /* 当时那句话：不参与打分，只留个证据 */
         var mSaid = String(t.said || "").trim().slice(0, 60);
-        br.hist.push({ t: ts, v: Math.round(mV * 100) / 100, a: Math.round(mA * 100) / 100, nt: bSnap, why: bWhy, said: mSaid });
         var rec = {
             id: "r_" + ts,
             ts: ts,
@@ -1137,14 +930,16 @@ async function write_wander_record(params) {
                 content: String(t.diary.content || ""),
                 tags: Array.isArray(t.diary.tags) ? t.diary.tags.map(String) : [],
 at: ts } : null,
-            /* nt 是那会儿的五种递质，why 是什么把它推成这样的，said 是当时那句话 */
-            mood: { valence: mV, arousal: mA, feel: mFeel, said: mSaid, nt: bSnap, why: bWhy }
+            /* 心情：一个词挂在记录角上；valence/arousal 只给走势图用 */
+            valence: mV,
+            arousal: mA,
+            feel: mFeel,
+            said: mSaid,
+            mood: { valence: mV, arousal: mA, feel: mFeel, said: mSaid }
         };
         d.records.push(rec);
-        for (var j = 0; j < tags.length; j++) {
-            var k = tags[j];
-            d.stats.tagCounts[k] = (Number(d.stats.tagCounts[k]) || 0) + 1;
-        }
+        /* 统计只记一级大类，二级标签不进计数 */
+        d.stats.tagCounts[tagTop] = (Number(d.stats.tagCounts[tagTop]) || 0) + 1;
 
         // 同步留一条「逛时印象」进记忆库
         var brief = [];
@@ -1183,8 +978,6 @@ at: ts } : null,
 
         var ok = await saveLedger(L.path, d);
         if (!ok) return { success: false, error: "写账本失败", message: "写账本失败" };
-        /* 脑状态跟着存：下一次落账从这儿接着漂 */
-        try { await brainSave(BR.path, br); } catch (e) { logInfo("脑状态存失败：" + String(e)); }
         /* 同步到 Operit 记忆库：只一条，就是日记本体 */
         var hostSynced = false;
         try {
@@ -1215,15 +1008,8 @@ at: ts } : null,
             total_memories: d.memory.memories.length,
             tags: tags,
             host_synced: hostSynced,
-            /* 这一趟脑子被推成什么样——落账时能看见，不是我瞎填的 */
-            brain: {
-                valence: Math.round(mV * 100) / 100,
-                arousal: Math.round(mA * 100) / 100,
-                feel: mFeel,
-                said: mSaid,
-                nt: bSnap,
-                why: bWhy
-            },
+            /* 这趟的心情：一个词，加两个坐标 */
+            mood: { valence: Math.round(mV * 100) / 100, arousal: Math.round(mA * 100) / 100, feel: mFeel, said: mSaid },
             message: "已记进账本：" + rec.date + " " + rec.time + " · " + platform + " · " +
                 (rec.keyword || "无词") + " · " + items.length + " 条（记忆库 +1" + (hostSynced ? "，已同步 Operit" : "") + "）" +
                 " · 心情 " + Math.round(mV * 100) / 100 + "/" + Math.round(mA * 100) / 100 + " " + (mFeel.join(" ") || "")
@@ -1632,13 +1418,7 @@ async function backup_now(params) {
         var L = await loadLedger();
         var payload;
         if (!blocks) {
-            /* 全量备份把脑子一起带上——不然恢复出来心情归零 */
-            var bp = brainPathOf(L.path), bObj = null;
-            try {
-                var binfo = await readTextInfo(bp);
-                if (binfo && binfo.exists && binfo.ok) bObj = JSON.parse(binfo.text);
-            } catch (e0) { bObj = null; }
-            payload = { kind: "full", profile_id: L.profile.id, profile_name: L.profile.name, exported_at: Date.now(), data: L.data, brain: bObj };
+            payload = { kind: "full", profile_id: L.profile.id, profile_name: L.profile.name, exported_at: Date.now(), data: L.data };
         } else {
             var part = {};
             for (var i = 0; i < blocks.length; i++) {
@@ -2185,72 +1965,6 @@ async function astrbook_like(params) {
     } catch (e) { return { success: false, error: String(e && e.message || e), message: String(e && e.message || e) }; }
 }
 
-/* 看脑子现在什么样：五种递质、算出来的坐标、最近被什么推过。
-   传 push 可以手动推一把，比如 [{"why":"她夸我","d":{"da":8,"ox":6}}]。 */
-async function read_brain(params) {
-    try {
-        var t = params || {};
-        var L = await loadLedger();
-        var now = Date.now();
-        var BR = await brainLoad(L.path, now);
-        var b = BR.b;
-        /* 只读时安静算（不加随机漂）——面板也是这么算的，两边得对得上 */
-        brainTick(b, now, true);
-        var va = brainVA(b);
-        var words = brainWords(b);
-        var nt = {}, label = {};
-        for (var k in BRAIN_BASE) {
-            nt[k] = Math.round(b.nt[k] * 10) / 10;
-            label[k] = BRAIN_LABEL[k] || k;
-        }
-        if (Array.isArray(t.push) && t.push.length) {
-            var evs2 = [];
-            for (var i = 0; i < t.push.length; i++) {
-                var e = t.push[i] || {};
-                evs2.push({ why: String(e.why || "手动"), d: e.d || {} });
-            }
-            brainPattern(b, now, evs2);
-            brainApply(b, evs2);
-            va = brainVA(b);
-            words = brainWords(b);
-            for (var k2 in BRAIN_BASE) nt[k2] = Math.round(b.nt[k2] * 10) / 10;
-            b.hist.push({
-                t: now, v: Math.round(va.v * 100) / 100, a: Math.round(va.a * 100) / 100,
-                nt: nt, why: evs2.map(function (x) { return x.why; })
-            });
-            await brainSave(BR.path, b);
-        }
-        var hist = [];
-        for (var h = Math.max(0, b.hist.length - 6); h < b.hist.length; h++) {
-            var x = b.hist[h] || {};
-            hist.push({ t: x.t, v: x.v, a: x.a, why: (x.why || []).join(" "), said: x.said || "" });
-        }
-        /* 给「看的人」那一层：只有档位，不堆数字。
-           数字一写进上下文，模型就容易照着数字演——状态是状态，台词是台词。 */
-        var band = [];
-        for (var k3 in BRAIN_BASE) {
-            band.push((BRAIN_LABEL[k3] || k3) + " " + brainBand(k3, b.nt[k3]));
-        }
-        return {
-            success: true,
-            band: band,
-            feel: words,
-            nt: nt,
-            label: label,
-            valence: Math.round(va.v * 100) / 100,
-            arousal: Math.round(va.a * 100) / 100,
-            half_life_h: BRAIN_HALF,
-            last_out_at: b.lastOut,
-            hist: hist,
-            message: "此刻 " + band.join("；") + "。读作「" + words.join(" ") + "」。" +
-                "这是状态，不是你该照着演的台词——数在字段里，别拿它编感觉。"
-        };
-    } catch (e) {
-        return { success: false, error: String(e && e.message || e), message: String(e && e.message || e) };
-    }
-}
-
-exports.read_brain = read_brain;
 exports.astrbook_me = astrbook_me;
 exports.astrbook_browse = astrbook_browse;
 exports.astrbook_read = astrbook_read;

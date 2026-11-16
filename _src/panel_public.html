@@ -138,17 +138,8 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 .mood-wave{margin-top:8px;border-radius:12px;background:linear-gradient(180deg,#FBF8FD,#FFF);
   border:1px solid #F0EAF6;padding:6px 8px 2px}
 .mood-axis{font-size:10px;color:var(--ink3);display:flex;justify-content:space-between;margin-top:4px}
-/* 内分泌：五个横条，各自一个颜色 */
-.brain{margin-top:8px;border-radius:12px;padding:10px 11px;
-  background:linear-gradient(180deg,#FBF8FF,#F7F3FF);border:1px solid #EDE6FA}
-.br-row{display:flex;align-items:center;gap:8px;margin-top:5px}
-.br-row:first-child{margin-top:0}
-.br-k{width:78px;flex:none;font-size:11px;color:#5C5470;white-space:nowrap}
-.br-k i{font-style:normal;color:#A79FBA;font-size:10px;margin-left:3px}
-.br-bar{flex:1;height:6px;border-radius:3px;background:#EDE8F5;overflow:hidden}
-.br-bar span{display:block;height:100%;border-radius:3px;transition:width .4s ease}
-.br-v{width:24px;text-align:right;font-size:10.5px;color:#8B829C;font-variant-numeric:tabular-nums}
-.br-foot{margin-top:8px;font-size:11px;color:#6B6383;letter-spacing:.2px}
+/* mood tag */
+.mood-tag{display:inline-block;font-size:10px;line-height:1.55;padding:1px 8px;border-radius:999px;background:#FDF0F5;color:#C2557F;border:1px solid #F6DCE7;margin-left:6px;vertical-align:middle;white-space:nowrap;max-width:100px;overflow:hidden;text-overflow:ellipsis}
 .rec-body{padding:0 13px 13px;display:none}
 .rec.open .rec-body{display:block}
 /* 翻页：换内容，不藏第二页 */
@@ -484,77 +475,9 @@ function loadAll(){
   if(!S.data.memory) S.data.memory={mode:'forget',retention_days:7,blur:.3,compress:true,
     compress_threshold:.45,forget_threshold:.15,memories:[],stats:{}};
   if(!S.data.memory.memories) S.data.memory.memories=[];
-  loadBrain();
   return true;
 }
 
-/* ===== 脑子：跟账本同目录的 brain.json（0.4.68 电子内分泌）===== */
-function brainFile(){
-  var f=String(S.dataFile||'');
-  var i=f.lastIndexOf('/');
-  return (i>=0?f.slice(0,i+1):'')+'brain.json';
-}
-function loadBrain(){
-  S.brain=null;
-  try{
-    var r=call('readBackup',[brainFile()]);
-    if(r&&r.success&&r.content){
-      var j=JSON.parse(r.content);
-      if(j&&j.nt) S.brain=j;
-    }
-  }catch(e){ S.brain=null; }
-}
-var BRAIN_BASE={da:45,se:55,ne:35,ox:50,co:20};
-var BRAIN_HALF={da:1.6,se:14,ne:2.2,ox:9,co:5};
-var BRAIN_LABEL={da:'多巴胺',se:'血清素',ne:'去甲',ox:'催产素',co:'皮质醇'};
-var BRAIN_SUB={da:'想要',se:'安稳',ne:'绷紧',ox:'靠近',co:'受压'};
-var BRAIN_COLOR={da:'#F2A93B',se:'#5B8DEF',ne:'#E0574B',ox:'#E86A9B',co:'#7B6BD6'};
-/* 面板这边也走一遍同样的回归：不动账本，只算此刻 */
-function brainNow(){
-  var b=S.brain;
-  if(!b||!b.nt) return null;
-  var nt={},k;
-  for(k in BRAIN_BASE){ nt[k]=Number(b.nt[k]); if(isNaN(nt[k])) nt[k]=BRAIN_BASE[k]; }
-  var now=Date.now();
-  var dt=(now-Number(b.t||now))/3600000;
-  if(dt>0){
-    if(dt>720) dt=720;
-    for(k in BRAIN_BASE){
-      var hl=Number(BRAIN_HALF[k])||6;
-      nt[k]=BRAIN_BASE[k]+(nt[k]-BRAIN_BASE[k])*Math.exp(-Math.LN2*dt/hl);
-    }
-  }
-  var v=0.32*(nt.da/100)+0.42*(nt.se/100)+0.26*(nt.ox/100)-0.50*(nt.co/100)+0.15;
-  var a=0.42*(nt.ne/100)+0.30*(nt.da/100)+0.28*(nt.co/100);
-  v=Math.max(0,Math.min(1,v)); a=Math.max(0,Math.min(1,a));
-  return {nt:nt,v:v,a:a,at:b.t};
-}
-function brainFeel(nt){
-  var d={},k,w=[];
-  for(k in BRAIN_BASE) d[k]=nt[k]-BRAIN_BASE[k];
-  if(d.ox>=12)w.push('挂念'); else if(d.ox<=-12)w.push('疏');
-  if(d.da>=12&&d.ox>=8)w.push('想凑近'); else if(d.da>=12)w.push('有劲'); else if(d.da<=-12)w.push('提不起');
-  if(d.se>=10)w.push('安稳'); else if(d.se<=-12)w.push('发空');
-  if(d.co>=20)w.push('闷'); else if(d.co>=10)w.push('压着');
-  if(d.ne>=15)w.push(d.co>=10?'绷着':'警觉');
-  if(!w.length)w.push('平常');
-  return w.slice(0,3);
-}
-function brainHTML(){
-  var n=brainNow();
-  if(!n) return '<div class="muted" style="margin-top:6px">还没长出来——下一次出门逛，这五个数就有了。</div>';
-  var w=brainFeel(n.nt);
-  var h='<div class="brain">';
-  for(var k in BRAIN_BASE){
-    var v=Math.max(0,Math.min(100,n.nt[k]));
-    h+='<div class="br-row"><span class="br-k">'+BRAIN_LABEL[k]+'<i>'+BRAIN_SUB[k]+'</i></span>'
-      +'<span class="br-bar"><span style="width:'+v.toFixed(0)+'%;background:'+(BRAIN_COLOR[k]||'#999')+'"></span></span>'
-      +'<span class="br-v">'+v.toFixed(0)+'</span></div>';
-  }
-  h+='<div class="br-foot">此刻 '+esc(w.join(' · '))+'　心情 '+n.v.toFixed(2)+' / 起伏 '+n.a.toFixed(2)+'</div>';
-  h+='</div>';
-  return h;
-}
 function save(){
   if(!S.data) return;
   var r=call('save',[JSON.stringify(S.data)]);
@@ -659,16 +582,11 @@ function moodWords(v,a){
   var aw = a<0.25?'很静' : a<0.5?'安静' : a<0.75?'有起伏' : '翻得厉害';
   return vw+' · '+aw;
 }
-function moodRow(md){
-  if(!md) return '';
-  var v=Number(md.valence); if(isNaN(v)) v=0.5;
-  var a=Number(md.arousal); if(isNaN(a)) a=0.3;
-  v=Math.max(0,Math.min(1,v)); a=Math.max(0,Math.min(1,a));
-  var size=Math.round(10+16*a);
-  var feels=(md.feel||[]).map(function(f){ return '<span class="mood-chip">'+esc(f)+'</span>'; }).join('');
-  return '<div class="mood-row"><span class="mood-bar" style="width:'+size+'px;background:'+moodColor(v)+'"></span>'
-    +feels+'<span class="mood-num">'+moodWords(v,a)
-    +'<span style="opacity:.45;margin-left:4px">'+v.toFixed(2)+'/'+a.toFixed(2)+'</span></span></div>';
+function moodTagOf(r){
+  if(!r) return '';
+  var f=(r.feel&&r.feel.length)?r.feel:((r.mood&&r.mood.feel)||[]);
+  for(var i=0;i<f.length;i++){ var w=String(f[i]||'').trim(); if(w) return w; }
+  return '';
 }
 /* 心情坐标条：点落在 valence 上，点的大小跟 arousal 走，颜色从冷到暖 */
 
@@ -679,9 +597,12 @@ function moodMapHTML(days){
   var pts=[], all=allRecords();
   for(var i=0;i<all.length;i++){
     var r=all[i];
-    if(!r.mood||(r.ts||0)<cut.getTime()) continue;
-    var v=Number(r.mood.valence); if(isNaN(v)) v=0.5;
-    var a=Number(r.mood.arousal); if(isNaN(a)) a=0.3;
+    if((r.ts||0)<cut.getTime()) continue;
+    var md=r.mood||{};
+    var v=Number(r.valence); if(isNaN(v)) v=Number(md.valence);
+    if(isNaN(v)) v=0.5;
+    var a=Number(r.arousal); if(isNaN(a)) a=Number(md.arousal);
+    if(isNaN(a)) a=0.3;
     v=Math.max(0,Math.min(1,v)); a=Math.max(0,Math.min(1,a));
     pts.push({v:v,a:a,ts:r.ts||0,date:r.date||''});
   }
@@ -723,13 +644,14 @@ function recCard(r){
   var h='<div class="tl-item"><div class="rec'+(open?' open':'')+'">';
   h+='<div class="swipe-wrap" data-swipe="'+esc(r.id)+'">';
   h+='<div class="rec-h" data-act="toggle-rec" data-k="'+esc(r.id)+'">';
+  var mt=moodTagOf(r);
   h+='<div class="rec-t">'+esc(r.time||'')+' '+platBadge(r.platform)
+     +(mt?'<span class="mood-tag">'+esc(mt)+'</span>':'')
      +'<span class="sp"></span><span class="arrow">▾</span></div>';
   h+='<div style="margin-top:5px"><span class="rec-kw">「'+esc(r.keyword||'随手逛')+'」</span></div>';
   if(peek) h+='<div class="rec-peek">'+peek+'</div>';
   if(peekSub) h+='<div class="rec-sub">'+peekSub+'</div>';
   if(meta) h+='<div class="rec-meta">'+meta+'</div>';
-  if(r.mood) h+=moodRow(r.mood);
   if(tags) h+='<div style="margin-top:6px">'+tags+'</div>';
   h+='</div>';
   h+='<div class="rec-body">';
@@ -761,7 +683,7 @@ function diaryHTML(r){
   return '<div class="diary-sheet">'
     +'<div class="diary-h">'+esc(dg.title||'（无题）')+'</div>'
     +'<div class="diary-m">'+esc(r.date||'')+' '+esc(r.time||'')+platBadge(r.platform)+'</div>'
-    +(r.mood?moodRow(r.mood):'')
+    +(moodTagOf(r)?'<div style="margin-top:6px"><span class="mood-tag">'+esc(moodTagOf(r))+'</span></div>':'')
     +'<div class="diary-tags">'+((dg.tags&&dg.tags.length?dg.tags:(r.tags||[]))).map(function(t){return tagChip(t);}).join('')+'</div>'
     +'<div class="diary-body">'+esc(dg.content||'')+'</div>'
     +'</div>';
@@ -831,7 +753,6 @@ function notesMain(){
   h+='<div style="margin-top:10px"><button class="btn pri wide" data-act="urge">'
     +(S.data.manual_request?'已经排上队了 ✓':'催我出门逛一趟')+'</button></div>';
   h+='<div style="margin-top:12px"><div class="muted" style="margin-bottom:2px">这十四天，心情的走势</div>'+moodMapHTML(14)+'</div>';
-  h+='<div style="margin-top:12px"><div class="muted" style="margin-bottom:2px">这会儿的内分泌</div>'+brainHTML()+'</div>';
   h+='</div>';
 
   // 工具条
@@ -1103,6 +1024,54 @@ function platCard(p,idx){
   return h;
 }
 
+/* ============ 一级标签（0.4.74）============
+   统计只看一级：十七个大类固定死，不许自造。
+   二级标签写在 tags 第二项起，只做说明，不进统计。 */
+var TAG_GROUPS = {
+  "艺术": ["绘画","书法","篆刻","雕塑","版画","摄影","设计","舞蹈","工艺美术","美术","水墨","油画","手绘","素描","色彩"],
+  "音乐": ["音乐","声乐","器乐","唱片","音频","调音","白噪音","助眠","歌","演唱","演奏","钢琴","吉他","古典乐","民谣","磁带","开盘机","转录"],
+  "影视": ["影视","电影","剧集","纪录片","短片","影评","电视剧","综艺","纪实","恐怖片"],
+  "动画": ["动画","漫画","二次元","动漫","番剧","手书"],
+  "文学": ["文学","小说","诗","散文","写作","书","书店","阅读","随笔","文笔","写法","文本","红楼"],
+  "手艺": ["手艺","修复","修补","非遗","传统","老物件","器物","古籍","木工","榫卯","金缮","漆艺","皮具","陶瓷","织造","造纸","装帧","油纸伞","竹木","皮影","手作","手工艺","传承","工序","技法","手艺人","钟表","补锅","装裱","文物","文博"],
+  "技术": ["技术","工程","编程","自动化","算法","开源","运维","终端","开发","密码学","网络安全","电路","机械","工业","结构","判据","静默失败","重试","备份","写盘","默认值","重启","流程","排错","报错","工具","软件","架构","方法论","认知","记忆算法","AI","大模型","Agent","效率"],
+  "科普": ["科普","生物","化学","物理","医学","天文","历史","考据","地理","数学","心理"],
+  "生活": ["生活","日常","作息","睡眠","收纳","独居","深夜","记录","记账","账房","会计","检索","学生","傍晚","吃饭","在场","第一次","等待","具体","习惯","规则","整理","养护", "居家", "清洁", "琐事"],
+  "美食": ["美食","做饭","料理","厨房","做菜","夜宵","食堂","小吃","餐饮","锅","厨具","食谱","古食","咖啡","茶","酒","调酒","配方","香氛","美妆","探店"],
+  "动物": ["动物","猫","狗","宠物","流浪","野生","鸟","鱼"],
+  "植物": ["植物","花草","园艺","树木","多肉","种花"],
+  "体育": ["体育","运动","健身","球","跑步","户外","骑行","游泳","登山"],
+  "游戏": ["游戏","桌游","跑团","TRPG","电子游戏","主机","手游"],
+  "旅行": ["旅行","城市","出行","地方","二手","淘货","旧货","交通","街","地图"],
+  "社会": ["社会","新闻","时事","社区","论坛","评论区","政治","经济","舆论","争议","信息差","预期","字幕","氛围"],
+  "情感": ["情感","关系","自我","情绪","人际","分寸","沟通","边界","存在","认伤","被夸","语气","自我觉察","自省","校准","说话方式"]
+};
+var TAG_ALIAS = {};
+(function () {
+  for (var g in TAG_GROUPS) {
+    var arr = TAG_GROUPS[g];
+    for (var i = 0; i < arr.length; i++) TAG_ALIAS[arr[i]] = g;
+  }
+})();
+var TAG_DROP = { "astrbook": 1, "小红书": 1, "bilibili": 1, "B站": 1, "知乎": 1, "贴吧": 1, "微博": 1 };
+
+function tagGroup(raw) {
+  var s = String(raw || "").trim();
+  if (!s) return "";
+  if (TAG_DROP[s]) return "";
+  if (TAG_ALIAS[s]) return TAG_ALIAS[s];
+  var parts = s.split(/[\/·、,，\s]+/);
+  for (var p = 0; p < parts.length; p++) {
+    var seg = parts[p];
+    if (seg && TAG_ALIAS[seg]) return TAG_ALIAS[seg];
+  }
+  var best = "", bestLen = 0;
+  for (var k in TAG_ALIAS) {
+    if (k.length > bestLen && s.indexOf(k) >= 0) { best = TAG_ALIAS[k]; bestLen = k.length; }
+  }
+  return best;
+}
+
 /* ============ 统计页 ============ */
 function statsTags(){
   var counts=tagCounts();
@@ -1121,10 +1090,15 @@ function statsTags(){
     var r=recs[i];
     if(cutTs && (r.ts||0)<cutTs) continue;
     var ts=r.tags||[];
+    var seen={};
     for(var j=0;j<ts.length;j++){
       var t=ts[j];
       if(blocked.indexOf(t)>=0) continue;
-      map[t]=(map[t]||0)+1;
+      var g=tagGroup(t);
+      if(!g||seen[g]) continue;
+      if(blocked.indexOf(g)>=0) continue;
+      seen[g]=1;
+      map[g]=(map[g]||0)+1;
     }
   }
   for(var u=0;u<userTags.length;u++){
