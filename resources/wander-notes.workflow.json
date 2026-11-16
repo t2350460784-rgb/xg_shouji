@@ -44,10 +44,10 @@
       "actionConfig": {
         "command": {
           "__type": "com.ai.assistance.operit.data.model.ParameterValue.StaticValue",
-          "value": "D=/sdcard/Download/Operit/.wfguard; mkdir -p \"$D\" 2>/dev/null || true; F=\"$D/wander.ts\"; S=\"$D/trip_start\"; LK=\"$D/running.lock\"; N=$(date +%s); B=/sdcard/Download/Operit/闲逛手记/data.json; if [ -f \"$LK\" ]; then LM=$(stat -c %Y \"$LK\" 2>/dev/null || echo 0); if [ $((N-LM)) -lt 300 ]; then echo SKIP_RUNNING; exit 0; fi; fi; H=$(date +%H); if [ \"$H\" -lt 9 ] || [ \"$H\" -ge 23 ]; then echo SKIP_WINDOW; exit 0; fi; M=0; if [ -f \"$B\" ]; then if ! grep -q '\"manual_request\": *' \"$B\" 2>/dev/null; then M=1; fi; fi; HH=$(grep -o '\"interval_hours\"[^,}]*' \"$B\" 2>/dev/null | grep -o '[0-9][0-9.]*' | head -1); if [ -z \"$HH\" ]; then HH=6; fi; HI=${HH%.*}; TH=$(( HI * 3600 * 66 / 100 )); L=0; if [ -f \"$F\" ]; then L=$(cat \"$F\" 2>/dev/null || echo 0); fi; if [ \"$M\" = \"0\" ] && [ \"$L\" -gt 0 ] 2>/dev/null && [ $((N-L)) -lt $TH ]; then echo SKIP_GUARD; exit 0; fi; echo \"$N\" > \"$F\" 2>/dev/null || true; echo \"$(( N * 1000 ))\" > \"$S\" 2>/dev/null || true; touch \"$LK\" 2>/dev/null || true; echo RUN; exit 0"
+          "value": "D=/sdcard/Download/Operit/.wfguard; mkdir -p \"$D\" 2>/dev/null || true; F=\"$D/wander.ts\"; S=\"$D/trip_start\"; LK=\"$D/trip.lock\"; N=$(date +%s); B=/sdcard/Download/Operit/闲逛手记/data.json; if [ -f \"$LK\" ]; then LM=$(stat -c %Y \"$LK\" 2>/dev/null || echo 0); if [ $((N-LM)) -lt 300 ]; then echo \"[NO]_LOCKED\"; exit 0; fi; fi; H=$(date +%H); H=$((10#$H)); AS=$(grep -o '\"active_start\"[^,}]*' \"$B\" 2>/dev/null | grep -o '[0-9][0-9]*' | head -1); AE=$(grep -o '\"active_end\"[^,}]*' \"$B\" 2>/dev/null | grep -o '[0-9][0-9]*' | head -1); [ -z \"$AS\" ] && AS=9; [ -z \"$AE\" ] && AE=23; if [ \"$H\" -lt \"$AS\" ] || [ \"$H\" -ge \"$AE\" ]; then echo \"[NO]_WINDOW\"; exit 0; fi; M=0; if [ -f \"$B\" ]; then if ! grep -q '\"manual_request\": *' \"$B\" 2>/dev/null; then M=1; fi; fi; HH=$(grep -o '\"interval_hours\"[^,}]*' \"$B\" 2>/dev/null | grep -o '[0-9][0-9.]*' | head -1); [ -z \"$HH\" ] && HH=6; HI=${HH%.*}; TH=$(( HI * 3600 * 66 / 100 )); L=0; if [ -f \"$F\" ]; then L=$(cat \"$F\" 2>/dev/null || echo 0); fi; if [ \"$M\" = \"0\" ] && [ \"$L\" -gt 0 ] 2>/dev/null && [ $((N-L)) -lt $TH ]; then echo \"[NO]_GUARD\"; exit 0; fi; echo \"$N\" > \"$F\" 2>/dev/null || true; echo \"$(( N * 1000 ))\" > \"$S\" 2>/dev/null || true; touch \"$LK\" 2>/dev/null || true; echo \"[G\"\"O]\"; exit 0"
         }
       },
-      "description": "三合一：白天窗口、重启防抖、手动催逛。放行输出 RUN，并把本趟开始时间写进 .wfguard/trip_start"
+      "description": "四合一：执行中锁、白天窗口（读账本 active_start/active_end）、重启防抖、手动催逛。放行吐 [GO]，跳过吐 [NO]_xxx。命令原文里用 \"[G\"\"O]\" 拼接，确保不出现连续 [GO]，避免下游 CONTAINS 被命令原文误命中。放行时把本趟开始时间写进 .wfguard/trip_start"
     },
     {
       "__type": "com.ai.assistance.operit.data.model.ConditionNode",
@@ -64,9 +64,9 @@
       "operator": "CONTAINS",
       "right": {
         "__type": "com.ai.assistance.operit.data.model.ParameterValue.StaticValue",
-        "value": "RUN"
+        "value": "[GO]"
       },
-      "description": "输出 RUN 才往下走"
+      "description": "输出 [GO] 才往下走。标记词刻意避开 RUN/SKIP 字样"
     },
     {
       "__type": "com.ai.assistance.operit.data.model.ExecuteNode",
