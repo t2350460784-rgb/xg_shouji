@@ -24,6 +24,17 @@ var HOST = "XgHost";
 var WF_ID = "e8797dfb-c527-42bb-8c0a-bc1298eb32ba";
 var _wfPrompts = null;
 var _wfName = "";
+/* 脑子跟着账本走：data.json→brain.json，data_other.json→brain_other.json。
+ * 跟 tools.js 的 brainPathOf 同一套规则，别两边各写一个不一样的。 */
+function brainPathForLedger(ledgerPath) {
+    var s = String(ledgerPath || "");
+    var i = s.lastIndexOf("/");
+    var dir = i >= 0 ? s.slice(0, i + 1) : "";
+    var fn = (i >= 0 ? s.slice(i + 1) : s).replace(/\.json$/i, "");
+    if (!fn || fn === "data") return dir + "brain.json";
+    return dir + "brain_" + fn.replace(/^data_/, "") + ".json";
+}
+
 function refreshWf() {
     if (typeof Tools === "undefined" || !Tools.Workflow) return;
     try {
@@ -150,13 +161,20 @@ function oneArg(a) {
     return null;
 }
 
-/* 注册表（profiles.json）不是手记——不许被任何一本指成 data_file，
- * 否则工作流会往注册表里写手记，把档全弄丢。 */
+/* 系统文件不是手记——不许被任何一本指成 data_file。
+ * profiles.json 指上去，工作流会往注册表里写手记，档全丢；
+ * brain.json 指上去，落账会把五种递质当记录写进去，脑子当场废；
+ * rescue_arrays.json 是内部救援缓存，.ledger_state.json 这类隐藏文件同理。 */
+var SYSTEM_FILES = { "profiles.json": 1, "rescue_arrays.json": 1 };
+
 function isRegistryRef(f) {
     if (f === undefined || f === null) return false;
     var s = String(f).trim();
     if (!s) return false;
-    if (s === "profiles.json") return true;
+    var name = s.split("/").pop().toLowerCase();
+    if (SYSTEM_FILES[name]) return true;
+    if (/^brain(_.+)?\.json$/.test(name)) return true;
+    if (name.charAt(0) === ".") return true;
     var full = s.charAt(0) === "/" ? s : Store.BASE_DIR + s;
     return full === Store.REGISTRY_FILE;
 }
@@ -295,7 +313,7 @@ function Screen(ctx) {
             addProfile: function (a) {
                 try {
                     var t = argObj(a) || JSON.parse(argStr(a) || "{}");
-                    if (isRegistryRef(t.data_file)) return ok({ success: false, error: "profiles.json 是注册表本身，不能当手记的账本" });
+                    if (isRegistryRef(t.data_file)) return ok({ success: false, error: "这是系统文件（注册表 / 脑子 / 救援缓存），不能当手记的账本" });
                     var reg = Store.loadRegistry();
                     /* id 不许重：同一毫秒里连建两本（手快双击、脚本连跑）会撞 id，
                      * 撞了之后「删这本」就可能删到另一本——这不是理论问题，测试里真撞过。
@@ -335,7 +353,7 @@ function Screen(ctx) {
                     var p = findProfileLoose(reg, id);
                     if (!p) return ok({ success: false, error: "找不到这本手记：" + id });
                     if (t.data_file !== undefined && isRegistryRef(t.data_file)) {
-                        return ok({ success: false, error: "profiles.json 是注册表本身，不能当手记的账本" });
+                        return ok({ success: false, error: "这是系统文件（注册表 / 脑子 / 救援缓存），不能当手记的账本" });
                     }
                     var keys = ["name", "card_id", "card_name", "persona", "note", "data_file"];
                     for (var i = 0; i < keys.length; i++) {
@@ -493,6 +511,11 @@ function Screen(ctx) {
                     if (!/\.json$/i.test(name)) name += ".json";
                     var dir = path.replace(/[^\/]+$/, "");
                     var target = dir + name;
+                    /* 不许改成系统文件的名字——否则账本会顶着 brain.json 的身份活着，
+                     * 真正的脑子反而成了孤儿。 */
+                    if (isRegistryRef(target)) {
+                        return ok({ success: false, error: "不能改成系统文件的名字" });
+                    }
                     var File = Java.type("java.io.File");
                     var from = new File(path);
                     if (!from.exists()) return ok({ success: false, error: "原文件不在了" });
@@ -535,6 +558,11 @@ function Screen(ctx) {
                     path = String(path);
                     if (path === Store.REGISTRY_FILE) {
                         return ok({ success: false, error: "这是注册表，动不得" });
+                    }
+                    /* 脑子、救援缓存、隐藏文件也不许删——脑子删了五种递质全没，
+                     * 而且下次落账会从基线重建，看着像「心情突然归零」。 */
+                    if (isRegistryRef(path)) {
+                        return ok({ success: false, error: "这是系统文件（脑子 / 救援缓存 / 隐藏文件），删不得" });
                     }
                     var reg = Store.loadRegistry();
                     var active = Store.getActiveProfile(reg);
@@ -580,6 +608,7 @@ function Screen(ctx) {
                     return ok({ removed: !!gone, backup: kept, mode: mode, detached: detached });
                 } catch (e) { return fail(e); }
             },
+
 
             importBackup: function (a, b, c) {
                 try {
@@ -650,6 +679,11 @@ function Screen(ctx) {
                         }
                     }
                     Store.saveData(s.dataFile, d);
+                    /* 备份里带了脑子就一起恢复。不恢复的话，账本搬过去、心情归零，
+                     * 看着像「一换机人就变冷淡了」——那不是恢复，是换了个人。 */
+                    if (payload.brain && payload.brain.nt && typeof payload.brain.nt === "object") {
+                        try { Store.writeFile(brainPathForLedger(s.dataFile), JSON.stringify(payload.brain, null, 2)); } catch (eB) { }
+                    }
                     /* 写完读回来验一遍：写没落盘、或落成半截，都得当场说，不能报「导好了」。 */
                     var chk = Store.readFile(s.dataFile);
                     if (!chk) return ok({ success: false, error: "写完读不回来，文件没落盘：" + s.dataFile });
@@ -882,7 +916,7 @@ function Screen(ctx) {
                         for (var i = 0; i < ns.length; i++) {
                             var n = ns[i];
                             if (n.id === "trigger_sched" && String(((n.triggerConfig || {}).interval_ms) || "") !== wantMs) need = true;
-                            if (n.id === "exec_time_check" && String((((n.actionConfig || {}).command) || {}).value || "") !== wantCmd) need = true;
+                            /* 2026-11-02 改：不再比对时间窗命令体。面板一打开就按标准命令回填，会把手工改过的命令冲掉（11-01 改 WIN 那次就是这么没的）。对账只管定时器间隔，命令体谁写谁算。 */
                         }
                         if (!need) { logInfo("定时对账：一致，不动"); return null; }
                         logInfo("定时对账：对不上，回填一次");

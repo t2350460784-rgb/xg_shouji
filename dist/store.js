@@ -332,12 +332,16 @@ function loadRegistry() {
 }
 
 /* ---------- 注册表自净：注册表不是手记 ---------- */
-/** 这个路径指的是不是注册表本身？相对、绝对、光写文件名，都算。 */
+/** 这个路径指的是不是系统文件（注册表 / 脑子 / 救援缓存 / 隐藏文件）？相对、绝对、光写文件名，都算。 */
+var SYSTEM_FILES = { "profiles.json": 1, "rescue_arrays.json": 1 };
 function isRegistryRef(f) {
     if (f === undefined || f === null) return false;
     var s = String(f).trim();
     if (!s) return false;
-    if (s === "profiles.json") return true;
+    var name = s.split("/").pop().toLowerCase();
+    if (SYSTEM_FILES[name]) return true;
+    if (/^brain(_.+)?\.json$/.test(name)) return true;
+    if (name.charAt(0) === ".") return true;
     var full = s.charAt(0) === "/" ? s : BASE_DIR + s;
     return full === REGISTRY_FILE;
 }

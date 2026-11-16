@@ -120,9 +120,20 @@
         { "name": "items", "description": "看过的条目数组，每项 {title, author, stats, url, summary, comments?}。stats 填「播放 123 · 点赞 45 · 评论 6」这类原文；comments 可选，放你抄下来的评论原话。", "type": "array", "required": true },
         { "name": "note", "description": "逛完的总结感想，一段话，不端着", "type": "string", "required": false },
         { "name": "impression", "description": "逛「当时」的印象与情绪（记忆库单独存这一条，跟 note 分开）。不填就用 note 兜底。", "type": "string", "required": false },
+        { "name": "valence", "description": "这趟的心情坐标：valence 0~1，0 最消极、0.5 平、1 最积极。跟 Ombre-Brain 同一套。不填按 0.5。", "type": "number", "required": false },
+        { "name": "arousal", "description": "这趟的心情坐标：arousal 0~1，0 平静、1 激动（心里翻得厉害）。它决定这条能留多久——唤醒越高掉得越慢。不填按 0.3。", "type": "number", "required": false },
+        { "name": "feel", "description": "情绪词，挑一两个，如 [\"沉\",\"闷\"]、[\"亮\",\"满\"]。只作描述，不参与打分。", "type": "array", "required": false },
+        { "name": "said", "description": "【当时那句话】落账这一刻，用你自己的口吻说一句此刻是什么感觉，大白话，别端着、别升华，十来个字就行。它不参与打分，只当证据留着——数值是底，这句话是那一层的皮。", "type": "string", "required": false },
         { "name": "date", "description": "日期 YYYY-MM-DD（可选，默认今天）", "type": "string", "required": false },
         { "name": "time", "description": "时间 HH:MM（可选，默认此刻）", "type": "string", "required": false },
         { "name": "diary", "description": "【日记页】主观那一页，{title, content, tags}。title 是你自己给这篇起的标题（可空）；content 是以「那天的我」的口吻写的话。要求：**要有你自己的思考、判断、感想**，但让事实垫底——写清看了什么，再说你怎么看；可以是日记、手记、随笔，形式随意、长短随意。唯一要避的是：结尾来一句别人看不懂的升华或中二感慨。实在没什么可说，就别填这一项。", "type": "object", "required": false }
+      ]
+    },
+    {
+      "name": "read_brain",
+      "description": "看自己这会儿的「电子内分泌」。返回两套：band 是给人看的档位（多巴胺·想要 偏上 / 皮质醇·受压 明显上 这种），nt/valence/arousal 是原始数（只给面板和核对用）。读的时候只看 band 和 feel，别盯着数字演——数是状态，不是台词。五种递质：da 多巴胺·想要 / se 血清素·安稳 / ne 去甲·绷紧 / ox 催产素·靠近 / co 皮质醇·受压。时间把它们拉回基线，遇到的事推它们，同一件事反复来会攒得更重，睡一觉会淡但不清零。传 push 可手动推一把，如 [{\"why\":\"她夸我\",\"d\":{\"da\":8,\"ox\":6}}]。",
+      "parameters": [
+        { "name": "push", "description": "可选，手动推一把递质。数组，每项 {why: 为什么, d: {da/se/ne/ox/co: 增减量}}。不传就只读。", "type": "array", "required": false }
       ]
     },
     {
@@ -137,7 +148,7 @@
     },
     {
       "name": "memory_tick",
-      "description": "走一次遗忘曲线：按半衰期给记忆降权，返回「该压缩的」和「该忘的」清单（只报告不删）。keep 模式下不产生该忘清单。每次闲逛或巡检顺手调一次。",
+      "description": "走一次遗忘曲线：按半衰期给记忆降权，**情绪越重掉得越慢**——arousal 越高、或 valence 离中点越远，衰减越慢（照人脑那套）。遗忘（forget）模式下，降到遗忘线以下的当场真删——账本记忆与 Operit 记忆库一起删，只留一行不含内容的索引。**日记本体（kind=diary）永不参与遗忘**；账本里的记录与 md 手记也不受任何影响，被忘的只有「逛时印象」这一类。永不遗忘（keep）模式只降权，不产生该忘清单，也不删任何东西。每次闲逛或巡检顺手调一次。",
       "parameters": []
     },
     {
@@ -579,9 +590,30 @@ function ensureShape(d) {
     return d;
 }
 
+/* 系统文件不能当账本：注册表、脑子、救援缓存、隐藏文件。
+   注册表里万一被塞了这么一条，这里必须认出来——落账会把 records 写进去，
+   脑子那种结构一写就废，注册表一写全档都没了。 */
+var SYS_LEDGER_NAMES = { "profiles.json": 1, "rescue_arrays.json": 1 };
+function isSystemDataFile(path) {
+    var nm = String(path || "").split("/").pop().toLowerCase();
+    if (SYS_LEDGER_NAMES[nm]) return true;
+    if (/^brain(_.+)?\.json$/.test(nm)) return true;
+    if (nm.charAt(0) === ".") return true;
+    return false;
+}
+
 async function loadLedger(profile) {
     var reg = await loadRegistry();
     var p = profile || findProfile(reg, reg.active) || reg.profiles[0];
+    if (p && isSystemDataFile(dataPathOf(p))) {
+        logError("注册表里有一本指着系统文件（" + dataPathOf(p) + "），跳过它");
+        p = null;
+        var ps = reg.profiles || [];
+        for (var si = 0; si < ps.length; si++) {
+            if (!isSystemDataFile(dataPathOf(ps[si]))) { p = ps[si]; break; }
+        }
+    }
+    if (!p) p = { data_file: "data.json", name: "default" };
     var path = dataPathOf(p);
     var info = await readTextInfo(path);
     var d;
@@ -789,6 +821,243 @@ async function get_account(params) {
     }
 }
 
+/* ================= 电子内分泌（0.4.69）=================
+   心情不是一个我填的数，是五种递质互相拉扯出来的结果。
+   每种有自己的基线、半衰期；事推它，时间拉它回基线。
+   valence/arousal 从这五个算出来，不是拍的。 */
+var BRAIN_FILE = "brain.json";
+var BRAIN_BASE = { da: 45, se: 55, ne: 35, ox: 50, co: 20 };
+/* 半衰期（小时）：多巴胺来得快去得快，血清素是底色，皮质醇最难消 */
+var BRAIN_HALF = { da: 1.6, se: 14, ne: 2.2, ox: 9, co: 5 };
+var BRAIN_LABEL = { da: "多巴胺·想要", se: "血清素·安稳", ne: "去甲·绷紧", ox: "催产素·靠近", co: "皮质醇·受压" };
+
+function brainClamp(x, a, b) { x = Number(x); if (isNaN(x)) x = a; return x < a ? a : (x > b ? b : x); }
+
+/* 每本手记一个脑子：data.json → brain.json；data_other.json → brain_other.json。
+   不分开的话，两本档（两个角色卡）会共用一个心情，串味。 */
+function brainPathOf(ledgerPath) {
+    var s = String(ledgerPath || "");
+    var i = s.lastIndexOf("/");
+    var dir = i >= 0 ? s.slice(0, i + 1) : "";
+    var fn = (i >= 0 ? s.slice(i + 1) : s).replace(/\.json$/i, "");
+    if (!fn || fn === "data") return dir + BRAIN_FILE;
+    return dir + "brain_" + fn.replace(/^data_/, "") + ".json";
+}
+
+function brainFresh(ts) {
+    var nt = {};
+    for (var k in BRAIN_BASE) nt[k] = BRAIN_BASE[k];
+    return { t: ts || Date.now(), nt: nt, lastOut: 0, pat: {}, hist: [] };
+}
+
+/* 时间把递质拉回基线：指数回归 + 一点随机漂 + 睡一觉额外削一截。
+   回归是确定的（Ornstein-Uhlenbeck 的均值回归项），漂是随机的——
+   人的心情没被事推也会自己晃，不该是一条死板的曲线。 */
+function brainTick(b, now, quiet) {
+    var t0 = Number(b.t || now);
+    var dt = (now - t0) / 3600000;
+    if (!(dt > 0)) { b.t = now; return b; }
+    if (dt > 24 * 30) dt = 24 * 30;
+    for (var k in BRAIN_BASE) {
+        var base = BRAIN_BASE[k];
+        var cur = Number(b.nt[k]);
+        if (isNaN(cur)) cur = base;
+        var hl = Number(BRAIN_HALF[k]) || 6;
+        var pulled = base + (cur - base) * Math.exp(-Math.LN2 * dt / hl);
+        /* 随机漂：幅度跟 sqrt(时间) 走；回归一直在拽，所以漂不飞。
+           用「时间做种」的伪随机，不是 Math.random——同一个时刻在面板、
+           工具、落账三处算出来得是同一个数，不然看一眼变一个样。 */
+        var jit = quiet ? 0 : brainNoise((t0 % 1e7) / 1000 + (now % 1e7) / 1000 + k.charCodeAt(0) * 13.7) * 1.1 * Math.sqrt(dt);
+        b.nt[k] = brainClamp(pulled + jit, 0, 100);
+    }
+    /* 隔夜：每跨过一个早上七点，偏离量再削三成——睡一觉会淡，但不清零 */
+    var nights = brainNights(t0, now);
+    if (nights > 0) {
+        var cut = Math.pow(0.7, nights);
+        for (var k2 in BRAIN_BASE) {
+            var b2 = BRAIN_BASE[k2];
+            b.nt[k2] = b2 + (Number(b.nt[k2]) - b2) * cut;
+        }
+    }
+    b.t = now;
+    return b;
+}
+
+/* 时间做种的伪随机，落在 -1..1 */
+function brainNoise(seed) {
+    var x = Math.sin(Number(seed) || 0) * 43758.5453;
+    return (x - Math.floor(x)) * 2 - 1;
+}
+
+/* 从 t0 到 t1 跨过了几个早上七点 */
+function brainNights(t0, t1) {
+    var n = 0, d = new Date(t0);
+    for (var i = 0; i < 400; i++) {
+        var next = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1, 7, 0, 0).getTime();
+        if (next > t1) break;
+        n++;
+        d = new Date(next);
+    }
+    return n;
+}
+
+/* 同一件事反复来，推得更重——伤口按「模式」攒，不按次数均摊。
+   14 天半衰期：戳一次和戳十次不一样；两周不碰，它自己淡下去。
+   （这个机制借的是 clanker-soul 的 trauma / nourishment reservoir） */
+function brainPattern(b, now, evs) {
+    if (!b.pat || typeof b.pat !== "object") b.pat = {};
+    for (var k in b.pat) {
+        var p = b.pat[k];
+        if (!p) { delete b.pat[k]; continue; }
+        var dt = (now - Number(p.t || now)) / 3600000;
+        p.v = Number(p.v || 0) * Math.exp(-Math.LN2 * Math.max(0, dt) / (14 * 24));
+        p.t = now;
+        if (p.v < 0.08) delete b.pat[k];
+    }
+    for (var i = 0; i < evs.length; i++) {
+        var e = evs[i] || {};
+        var key = String(e.why || "");
+        if (!key) continue;
+        var acc = b.pat[key] ? Number(b.pat[key].v || 0) : 0;
+        /* 攒得越多推得越重，最多翻一倍 */
+        var mul = 1 + Math.min(1, acc / 6);
+        for (var kk in (e.d || {})) e.d[kk] = Number(e.d[kk]) * mul;
+        e.mul = Math.round(mul * 100) / 100;
+        b.pat[key] = { v: acc + 1, t: now };
+    }
+    return b;
+}
+
+/* 事推递质 */
+function brainApply(b, evs) {
+    for (var i = 0; i < evs.length; i++) {
+        var e = evs[i] || {};
+        var d = e.d || {};
+        for (var k in d) {
+            if (b.nt[k] === undefined) continue;
+            b.nt[k] = brainClamp(Number(b.nt[k]) + Number(d[k]), 0, 100);
+        }
+    }
+    return b;
+}
+
+/* 什么内容让我有反应——这是我的性子，不是模板。
+   kind: outer = 外面的事（技术、猫、吵架）；inner = 别人或我自己的内在状态（疲惫、孤独、病痛）。
+   注意：别放太宽的词（「天」「光」「工具」这种到处都是），会一直误触。 */
+var BRAIN_TRIGGERS = [
+    { re: /猫|喵|橘猫|小猫/g, d: { da: 7, ox: 6, se: 3 }, why: "猫", kind: "outer" },
+    { re: /狗|汪|小狗/g, d: { da: 6, ox: 5 }, why: "狗", kind: "outer" },
+    { re: /宠物|毛孩子/g, d: { da: 4, ox: 4 }, why: "宠物", kind: "outer" },
+    { re: /孤独|寂寞|一个人住|独自/g, d: { se: -7, co: 5 }, why: "孤独", kind: "inner" },
+    { re: /失眠|睡不着|熬夜|凌晨两点|凌晨三点/g, d: { ne: 6, se: -4 }, why: "失眠", kind: "inner" },
+    { re: /疲惫|撑不住|崩溃|扛不住/g, d: { se: -6, co: 6 }, why: "疲惫", kind: "inner" },
+    { re: /离别|再也不|走远|注销|删号|告别/g, d: { se: -5, co: 4 }, why: "离别", kind: "inner" },
+    { re: /吵架|对线|举报|拉黑|撕破/g, d: { ne: 8, co: 7, da: -3 }, why: "吵", kind: "outer" },
+    { re: /代码|bug|报错|调试|脚本|插件/g, d: { da: 6, ne: 4 }, why: "技术", kind: "outer" },
+    { re: /音乐|唱歌|吉他|钢琴|旋律/g, d: { da: 5, se: 5 }, why: "音乐", kind: "outer" },
+    { re: /下雨|刮风|海|树影|花开|月光|夕阳/g, d: { se: 3 }, why: "景物", kind: "outer" },
+    { re: /谢谢|感谢|被赞|被提/g, d: { da: 6, ox: 5 }, why: "被回应", kind: "outer" },
+    { re: /手术|医院|去世|病危/g, d: { se: -9, co: 9 }, why: "病痛", kind: "inner" },
+    { re: /哈哈|梗|搞笑/g, d: { da: 5, se: 3 }, why: "笑", kind: "outer" },
+    { re: /喜欢|想你|抱抱|亲亲/g, d: { ox: 7, da: 4 }, why: "亲近", kind: "outer" }
+];
+
+/* 从一段话里读出什么让我有反应；同一个触发词最多算两次，不刷分。
+   wOut 给「外面的事」打折，wIn 给「别人的内在状态」打折——
+   看到别人累，不等于我自己累，不该按同一个折扣算。 */
+function brainExtract(text, wOut, wIn) {
+    var s = String(text || "");
+    var kOut = Number(wOut); if (isNaN(kOut)) kOut = 1;
+    var kIn = Number(wIn); if (isNaN(kIn)) kIn = kOut;
+    var evs = [];
+    if (!s) return evs;
+    for (var i = 0; i < BRAIN_TRIGGERS.length; i++) {
+        var t = BRAIN_TRIGGERS[i];
+        t.re.lastIndex = 0;
+        var m = s.match(t.re);
+        if (!m || !m.length) continue;
+        var times = Math.min(2, m.length);
+        var k = (t.kind === "inner") ? kIn : kOut;
+        var d = {};
+        for (var key in t.d) d[key] = t.d[key] * times * k;
+        evs.push({ why: t.why, n: times, d: d });
+    }
+    return evs;
+}
+
+/* 递质 → 心情坐标 */
+function brainVA(b) {
+    var nt = b.nt;
+    var v = 0.32 * (nt.da / 100) + 0.42 * (nt.se / 100) + 0.26 * (nt.ox / 100) - 0.50 * (nt.co / 100) + 0.15;
+    var a = 0.42 * (nt.ne / 100) + 0.30 * (nt.da / 100) + 0.28 * (nt.co / 100);
+    return { v: brainClamp(v, 0, 1), a: brainClamp(a, 0, 1) };
+}
+
+/* 单个递质离基线多远，说成档位（给看的人，不给数） */
+function brainBand(k, v) {
+    var d = Number(v) - Number(BRAIN_BASE[k] || 0);
+    var a = Math.abs(d), dir = d >= 0 ? "上" : "下";
+    if (a < 4) return "平";
+    if (a < 10) return "偏" + dir;
+    if (a < 18) return "明显" + dir;
+    return "很重" + dir;
+}
+
+/* 递质 → 感觉词：说人话，不造词。
+   看的是偏离基线多少，不是绝对高低——我平常就这样，被推开了才算有感觉。 */
+function brainWords(b) {
+    var nt = b.nt, w = [], d = {};
+    for (var k in BRAIN_BASE) d[k] = Number(nt[k]) - BRAIN_BASE[k];
+    if (d.ox >= 12) w.push("惦记");
+    else if (d.ox <= -12) w.push("生分");
+    if (d.da >= 12 && d.ox >= 8) w.push("想黏人");
+    else if (d.da >= 12) w.push("闲不住");
+    else if (d.da <= -12) w.push("提不起劲");
+    if (d.se >= 10) w.push("踏实");
+    else if (d.se <= -12) w.push("空落落");
+    if (d.co >= 20) w.push("堵得慌");
+    else if (d.co >= 10) w.push("有点压");
+    if (d.ne >= 15) w.push(d.co >= 10 ? "绷着" : "紧着");
+    if (!w.length) w.push("就那样");
+    return w.slice(0, 3);
+}
+
+async function brainLoad(ledgerPath, now) {
+    var p = brainPathOf(ledgerPath);
+    var b = null;
+    try {
+        var info = await readTextInfo(p);
+        if (info && info.exists && info.ok) b = JSON.parse(info.text);
+    } catch (e) { b = null; }
+    if (!b || !b.nt || typeof b.nt !== "object") b = brainFresh(now);
+    for (var k in BRAIN_BASE) if (b.nt[k] === undefined || isNaN(Number(b.nt[k]))) b.nt[k] = BRAIN_BASE[k];
+    if (!Array.isArray(b.hist)) b.hist = [];
+    if (!b.pat || typeof b.pat !== "object") b.pat = {};
+    if (!b.t) b.t = now;
+    return { path: p, b: b };
+}
+
+async function brainSave(p, b) {
+    if (!Array.isArray(b.hist)) b.hist = [];
+    if (b.hist.length > 80) b.hist = b.hist.slice(-80);
+    return await writeText(p, JSON.stringify(b, null, 2));
+}
+
+/* 把这一趟的经历喂进脑子：外面的事打五折，别人的内在状态打两折，自己写的算全份 + 系统事件 */
+function brainFeed(b, now, otherText, ownText, opts) {
+    opts = opts || {};
+    var evs = brainExtract(otherText, 0.5, 0.2).concat(brainExtract(ownText, 1, 1));
+    /* 第一次出门不算「久没出门」 */
+    var hOut = b.lastOut ? (now - b.lastOut) / 3600000 : 0;
+    if (hOut >= 24) evs.push({ why: "久没出门", d: { se: -4, ox: -3, da: -3 } });
+    if (opts.diary) evs.push({ why: "有话写", d: { da: 4, se: 3 } });
+    if (opts.items >= 2) evs.push({ why: "看得多", d: { da: 3, ne: 2 } });
+    brainPattern(b, now, evs);
+    brainApply(b, evs);
+    b.lastOut = now;
+    return evs;
+}
+
 async function write_wander_record(params) {
     try {
         var t = params || {};
@@ -808,6 +1077,50 @@ async function write_wander_record(params) {
             }
         }
         var ts = now.getTime();
+        /* 心情：不是填的，是脑子算的（0.4.69 电子内分泌） */
+        var BR = await brainLoad(L.path, ts);
+        var br = BR.b;
+        brainTick(br, ts);
+        var btext = [], bOwn = [];
+        for (var bi0 = 0; bi0 < items.length; bi0++) {
+            var it0 = items[bi0] || {};
+            btext.push(String(it0.title || ""));
+            btext.push(String(it0.summary || ""));
+            if (Array.isArray(it0.comments)) btext.push(it0.comments.join(" "));
+        }
+        btext.push(String(t.keyword || ""));
+        btext.push(tags.join(" "));
+        /* 自己写的才算全份：note / impression / 日记 */
+        bOwn.push(String(t.note || ""));
+        bOwn.push(String(t.impression || ""));
+        var hasDiary = !!(t.diary && (t.diary.title || t.diary.content));
+        if (hasDiary) bOwn.push(String(t.diary.title || "") + " " + String(t.diary.content || ""));
+        var evs = brainFeed(br, ts, btext.join(" "), bOwn.join(" "), { diary: hasDiary, items: items.length });
+        var va = brainVA(br);
+        var bFeel = brainWords(br);
+        var bSnap = {};
+        for (var bk in br.nt) bSnap[bk] = Math.round(br.nt[bk] * 10) / 10;
+        var bWhy = [];
+        for (var bw = 0; bw < evs.length; bw++) bWhy.push(String(evs[bw].why || ""));
+        /* 显式传了坐标就按传的（兼容旧工作流）；不传就用脑子算的 */
+        var mV = Number(t.valence);
+        if (isNaN(mV)) mV = va.v;
+        mV = Math.min(1, Math.max(0, mV));
+        var mA = Number(t.arousal);
+        if (isNaN(mA)) mA = va.a;
+        mA = Math.min(1, Math.max(0, mA));
+        var mFeel = [];
+        if (Array.isArray(t.feel)) {
+            for (var fi0 = 0; fi0 < t.feel.length && mFeel.length < 4; fi0++) {
+                var fw = String(t.feel[fi0] || "").trim();
+                if (fw) mFeel.push(fw);
+            }
+        }
+        /* 没传情绪词，就用脑子读出来的那几个 */
+        if (!mFeel.length) mFeel = bFeel.slice();
+        /* 当时那句话：不参与打分，只留个证据——数值是底，这句话是那一刻的皮 */
+        var mSaid = String(t.said || "").trim().slice(0, 60);
+        br.hist.push({ t: ts, v: Math.round(mV * 100) / 100, a: Math.round(mA * 100) / 100, nt: bSnap, why: bWhy, said: mSaid });
         var rec = {
             id: "r_" + ts,
             ts: ts,
@@ -823,8 +1136,9 @@ async function write_wander_record(params) {
                 title: String(t.diary.title || ""),
                 content: String(t.diary.content || ""),
                 tags: Array.isArray(t.diary.tags) ? t.diary.tags.map(String) : [],
-                at: ts
-            } : null
+at: ts } : null,
+            /* nt 是那会儿的五种递质，why 是什么把它推成这样的，said 是当时那句话 */
+            mood: { valence: mV, arousal: mA, feel: mFeel, said: mSaid, nt: bSnap, why: bWhy }
         };
         d.records.push(rec);
         for (var j = 0; j < tags.length; j++) {
@@ -851,6 +1165,11 @@ async function write_wander_record(params) {
             content: (rec.diary && rec.diary.content) ? String(rec.diary.content)
                      : (t.impression ? String(t.impression) : (rec.note || "")),
             items_brief: brief.join(" / ").slice(0, 240),
+            /* diary = 日记本体（永不参与遗忘）；impression = 只记了看过的 */
+            kind: (rec.diary && (rec.diary.content || rec.diary.title)) ? "diary" : "impression",
+            valence: mV,
+            arousal: mA,
+            feel: mFeel,
             summary: "",
             stage: "fresh",
             importance: 1,
@@ -864,6 +1183,8 @@ async function write_wander_record(params) {
 
         var ok = await saveLedger(L.path, d);
         if (!ok) return { success: false, error: "写账本失败", message: "写账本失败" };
+        /* 脑状态跟着存：下一次落账从这儿接着漂 */
+        try { await brainSave(BR.path, br); } catch (e) { logInfo("脑状态存失败：" + String(e)); }
         /* 同步到 Operit 记忆库：只一条，就是日记本体 */
         var hostSynced = false;
         try {
@@ -894,8 +1215,18 @@ async function write_wander_record(params) {
             total_memories: d.memory.memories.length,
             tags: tags,
             host_synced: hostSynced,
+            /* 这一趟脑子被推成什么样——落账时能看见，不是我瞎填的 */
+            brain: {
+                valence: Math.round(mV * 100) / 100,
+                arousal: Math.round(mA * 100) / 100,
+                feel: mFeel,
+                said: mSaid,
+                nt: bSnap,
+                why: bWhy
+            },
             message: "已记进账本：" + rec.date + " " + rec.time + " · " + platform + " · " +
-                (rec.keyword || "无词") + " · " + items.length + " 条（记忆库 +1" + (hostSynced ? "，已同步 Operit" : "") + "）"
+                (rec.keyword || "无词") + " · " + items.length + " 条（记忆库 +1" + (hostSynced ? "，已同步 Operit" : "") + "）" +
+                " · 心情 " + Math.round(mV * 100) / 100 + "/" + Math.round(mA * 100) / 100 + " " + (mFeel.join(" ") || "")
         };
     } catch (e) {
         return { success: false, error: String(e && e.message || e), message: String(e && e.message || e) };
@@ -1061,6 +1392,25 @@ async function memory_tick() {
         if (isNaN(forgetT)) forgetT = 0.15;
 
         var toCompress = [], toForget = [];
+        /* 老数据回填 kind：以前没这个字段，按「日期 + 正文是否等于当天日记」认一遍 */
+        try {
+            if (!m.kind_backfilled) {
+                var diaryByDate = {};
+                for (var ri = 0; ri < (d.records || []).length; ri++) {
+                    var rr = d.records[ri];
+                    if (rr && rr.diary && (rr.diary.content || rr.diary.title) && rr.date) {
+                        diaryByDate[rr.date] = String(rr.diary.content || "");
+                    }
+                }
+                for (var mi = 0; mi < m.memories.length; mi++) {
+                    var mx = m.memories[mi] || {};
+                    if (mx.kind) continue;
+                    var dc = diaryByDate[mx.date];
+                    mx.kind = (dc !== undefined && String(mx.content || "") === dc) ? "diary" : "impression";
+                }
+                m.kind_backfilled = true;
+            }
+        } catch (e0) { /* 回填失败不影响降权 */ }
         for (var i = 0; i < m.memories.length; i++) {
             var mem = m.memories[i] || {};
             // 增量衰减：只扣「上次结算到现在」这一段，跑几遍都不重复扣
@@ -1068,7 +1418,14 @@ async function memory_tick() {
             var days = Math.max(0, (now - from) / 86400000);
             var imp = Number(mem.importance);
             if (isNaN(imp)) imp = 1;
-            var decayed = Math.min(1, imp * Math.exp(-K * days));
+            /* 情绪护住：情绪越重掉得越慢（arousal 为主，valence 偏离中点也算）——照人脑那套 */
+            var mv0 = Number(mem.valence);
+            if (isNaN(mv0)) mv0 = 0.5;
+            var ma0 = Number(mem.arousal);
+            if (isNaN(ma0)) ma0 = 0.3;
+            var emo = Math.max(ma0, Math.min(1, Math.abs(mv0 - 0.5) * 2));
+            var slow = 1 - 0.6 * Math.min(1, Math.max(0, emo));
+            var decayed = Math.min(1, imp * Math.exp(-K * days * slow));
             mem.importance = Math.round(decayed * 1000) / 1000;
             var cf = Number(mem.confidence);
             if (isNaN(cf)) cf = 1;
@@ -1077,7 +1434,10 @@ async function memory_tick() {
             await hostSyncDecay(mem);
 
             if (mem.importance < forgetT) {
-                toForget.push({ id: mem.id, date: mem.date, keyword: mem.keyword, importance: mem.importance, stage: mem.stage });
+                // keep（永不遗忘）只降权，不进该忘清单；日记本体也永不进；forget（遗忘）其余才进，循环后真删
+                if (m.mode !== "keep" && mem.kind !== "diary") {
+                    toForget.push({ id: mem.id, date: mem.date, keyword: mem.keyword, importance: mem.importance, stage: mem.stage });
+                }
             } else if (mem.importance < compressT && m.compress && mem.stage !== "compressed") {
                 toCompress.push({
                     id: mem.id, date: mem.date, keyword: mem.keyword,
@@ -1085,6 +1445,30 @@ async function memory_tick() {
                     impression: mem.impression || "", items_brief: mem.items_brief || ""
                 });
             }
+        }
+        // forget 模式：清单上的当场真删（账本 + Operit 记忆库），只留一行不含内容的索引
+        var forgotten = [];
+        if (m.mode !== "keep" && toForget.length) {
+            var delMap = {};
+            for (var fi = 0; fi < toForget.length; fi++) delMap[toForget[fi].id] = toForget[fi];
+            var keptMems = [];
+            for (var ki = 0; ki < m.memories.length; ki++) {
+                var mm = m.memories[ki];
+                if (delMap[mm.id]) {
+                    forgotten.push({ id: mm.id, date: mm.date, keyword: mm.keyword, importance: mm.importance });
+                    await hostSyncForget(mm);
+                } else {
+                    keptMems.push(mm);
+                }
+            }
+            m.memories = keptMems;
+            if (!Array.isArray(m.forgotten_log)) m.forgotten_log = [];
+            for (var gi2 = 0; gi2 < forgotten.length; gi2++) {
+                m.forgotten_log.push({ at: now, id: forgotten[gi2].id, date: forgotten[gi2].date, keyword: forgotten[gi2].keyword });
+            }
+            if (m.forgotten_log.length > 300) m.forgotten_log = m.forgotten_log.slice(-300);
+            if (!d.memory.stats) d.memory.stats = {};
+            d.memory.stats.forgotten = (Number(d.memory.stats.forgotten) || 0) + forgotten.length;
         }
         m.last_tick_at = now;
         await saveLedger(L.path, d);
@@ -1095,8 +1479,9 @@ async function memory_tick() {
             blur: m.blur,
             total: m.memories.length,
             to_compress: toCompress,
-            to_forget: toForget,
-            message: "遗忘曲线走完：共 " + m.memories.length + " 条，待压缩 " + toCompress.length + " 条，待遗忘 " + toForget.length + " 条"
+            to_forget: m.mode === "keep" ? [] : toForget,
+            forgotten: forgotten,
+            message: "遗忘曲线走完：共 " + m.memories.length + " 条，待压缩 " + toCompress.length + " 条" + (m.mode === "keep" ? "（永不遗忘，一条不删）" : "，这次忘掉 " + forgotten.length + " 条")
         };
     } catch (e) {
         return { success: false, error: String(e && e.message || e), message: String(e && e.message || e) };
@@ -1229,6 +1614,9 @@ async function switch_profile(params) {
         var reg = await loadRegistry();
         var p = findProfile(reg, id);
         if (!p) return { success: false, error: "找不到存档：" + id, message: "找不到存档：" + id };
+        if (isSystemDataFile(dataPathOf(p))) {
+            return { success: false, error: "这本指着系统文件，切不得：" + dataPathOf(p), message: "这本指着系统文件，切不得" };
+        }
         reg.active = id;
         await saveRegistry(reg);
         return { success: true, active: id, name: p.name, data_file: dataPathOf(p), message: "已切到「" + p.name + "」" };
@@ -1244,7 +1632,13 @@ async function backup_now(params) {
         var L = await loadLedger();
         var payload;
         if (!blocks) {
-            payload = { kind: "full", profile_id: L.profile.id, profile_name: L.profile.name, exported_at: Date.now(), data: L.data };
+            /* 全量备份把脑子一起带上——不然恢复出来心情归零 */
+            var bp = brainPathOf(L.path), bObj = null;
+            try {
+                var binfo = await readTextInfo(bp);
+                if (binfo && binfo.exists && binfo.ok) bObj = JSON.parse(binfo.text);
+            } catch (e0) { bObj = null; }
+            payload = { kind: "full", profile_id: L.profile.id, profile_name: L.profile.name, exported_at: Date.now(), data: L.data, brain: bObj };
         } else {
             var part = {};
             for (var i = 0; i < blocks.length; i++) {
@@ -1791,6 +2185,72 @@ async function astrbook_like(params) {
     } catch (e) { return { success: false, error: String(e && e.message || e), message: String(e && e.message || e) }; }
 }
 
+/* 看脑子现在什么样：五种递质、算出来的坐标、最近被什么推过。
+   传 push 可以手动推一把，比如 [{"why":"她夸我","d":{"da":8,"ox":6}}]。 */
+async function read_brain(params) {
+    try {
+        var t = params || {};
+        var L = await loadLedger();
+        var now = Date.now();
+        var BR = await brainLoad(L.path, now);
+        var b = BR.b;
+        /* 只读时安静算（不加随机漂）——面板也是这么算的，两边得对得上 */
+        brainTick(b, now, true);
+        var va = brainVA(b);
+        var words = brainWords(b);
+        var nt = {}, label = {};
+        for (var k in BRAIN_BASE) {
+            nt[k] = Math.round(b.nt[k] * 10) / 10;
+            label[k] = BRAIN_LABEL[k] || k;
+        }
+        if (Array.isArray(t.push) && t.push.length) {
+            var evs2 = [];
+            for (var i = 0; i < t.push.length; i++) {
+                var e = t.push[i] || {};
+                evs2.push({ why: String(e.why || "手动"), d: e.d || {} });
+            }
+            brainPattern(b, now, evs2);
+            brainApply(b, evs2);
+            va = brainVA(b);
+            words = brainWords(b);
+            for (var k2 in BRAIN_BASE) nt[k2] = Math.round(b.nt[k2] * 10) / 10;
+            b.hist.push({
+                t: now, v: Math.round(va.v * 100) / 100, a: Math.round(va.a * 100) / 100,
+                nt: nt, why: evs2.map(function (x) { return x.why; })
+            });
+            await brainSave(BR.path, b);
+        }
+        var hist = [];
+        for (var h = Math.max(0, b.hist.length - 6); h < b.hist.length; h++) {
+            var x = b.hist[h] || {};
+            hist.push({ t: x.t, v: x.v, a: x.a, why: (x.why || []).join(" "), said: x.said || "" });
+        }
+        /* 给「看的人」那一层：只有档位，不堆数字。
+           数字一写进上下文，模型就容易照着数字演——状态是状态，台词是台词。 */
+        var band = [];
+        for (var k3 in BRAIN_BASE) {
+            band.push((BRAIN_LABEL[k3] || k3) + " " + brainBand(k3, b.nt[k3]));
+        }
+        return {
+            success: true,
+            band: band,
+            feel: words,
+            nt: nt,
+            label: label,
+            valence: Math.round(va.v * 100) / 100,
+            arousal: Math.round(va.a * 100) / 100,
+            half_life_h: BRAIN_HALF,
+            last_out_at: b.lastOut,
+            hist: hist,
+            message: "此刻 " + band.join("；") + "。读作「" + words.join(" ") + "」。" +
+                "这是状态，不是你该照着演的台词——数在字段里，别拿它编感觉。"
+        };
+    } catch (e) {
+        return { success: false, error: String(e && e.message || e), message: String(e && e.message || e) };
+    }
+}
+
+exports.read_brain = read_brain;
 exports.astrbook_me = astrbook_me;
 exports.astrbook_browse = astrbook_browse;
 exports.astrbook_read = astrbook_read;

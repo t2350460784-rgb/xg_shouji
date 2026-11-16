@@ -121,6 +121,34 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;heigh
 .rec-peek{font-size:12.5px;color:var(--ink2);margin-top:7px;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .rec-meta{font-size:11px;color:var(--ink3);margin-top:5px}
+.mood-row{display:flex;align-items:center;gap:6px;margin-top:6px;flex-wrap:wrap}
+.mood-bar{flex:none;height:6px;border-radius:3px;
+  box-shadow:0 0 0 2px rgba(255,255,255,.85),0 1px 4px rgba(90,70,110,.14)}
+.mood-chip{font-size:10px;padding:1px 7px;border-radius:999px;background:#F3EFF7;color:#6B5A78}
+.mood-num{font-size:10.5px;color:var(--ink2);letter-spacing:.2px}
+.mood-map{position:relative;height:136px;margin-top:8px;border-radius:12px;
+  background:linear-gradient(180deg,#FBF8FD,#FFF);border:1px solid #F0EAF6;overflow:hidden}
+.mood-map:before{content:'';position:absolute;left:50%;top:12px;bottom:12px;width:1px;
+  background:repeating-linear-gradient(180deg,#E9E2F1 0 4px,transparent 4px 8px)}
+.mood-map:after{content:'';position:absolute;top:50%;left:12px;right:12px;height:1px;
+  background:repeating-linear-gradient(90deg,#E9E2F1 0 4px,transparent 4px 8px)}
+.mood-map i{position:absolute;border-radius:50%;transform:translate(-50%,50%);
+  box-shadow:0 0 0 3px rgba(255,255,255,.78),0 2px 8px rgba(90,70,110,.13)}
+.mood-map .q{position:absolute;font-size:9.5px;color:#C6BAD2;letter-spacing:.5px;pointer-events:none}
+.mood-wave{margin-top:8px;border-radius:12px;background:linear-gradient(180deg,#FBF8FD,#FFF);
+  border:1px solid #F0EAF6;padding:6px 8px 2px}
+.mood-axis{font-size:10px;color:var(--ink3);display:flex;justify-content:space-between;margin-top:4px}
+/* 内分泌：五个横条，各自一个颜色 */
+.brain{margin-top:8px;border-radius:12px;padding:10px 11px;
+  background:linear-gradient(180deg,#FBF8FF,#F7F3FF);border:1px solid #EDE6FA}
+.br-row{display:flex;align-items:center;gap:8px;margin-top:5px}
+.br-row:first-child{margin-top:0}
+.br-k{width:78px;flex:none;font-size:11px;color:#5C5470;white-space:nowrap}
+.br-k i{font-style:normal;color:#A79FBA;font-size:10px;margin-left:3px}
+.br-bar{flex:1;height:6px;border-radius:3px;background:#EDE8F5;overflow:hidden}
+.br-bar span{display:block;height:100%;border-radius:3px;transition:width .4s ease}
+.br-v{width:24px;text-align:right;font-size:10.5px;color:#8B829C;font-variant-numeric:tabular-nums}
+.br-foot{margin-top:8px;font-size:11px;color:#6B6383;letter-spacing:.2px}
 .rec-body{padding:0 13px 13px;display:none}
 .rec.open .rec-body{display:block}
 /* 翻页：换内容，不藏第二页 */
@@ -316,7 +344,7 @@ var S = {
   newTag:"", blockDraft:"",
   vaultEdit:null, pendingDelete:null,
   baseDir:"", pickOpen:false, pickFiles:null, pickErr:"",
-  bridgeVer:"", bridgeShape:""
+  bridgeVer:"", bridgeShape:"", brain:null
 };
 
 /* 页面自己的版本。桥的版本对不上，就说明这份页面是旧的（缓存没换），
@@ -456,7 +484,76 @@ function loadAll(){
   if(!S.data.memory) S.data.memory={mode:'forget',retention_days:7,blur:.3,compress:true,
     compress_threshold:.45,forget_threshold:.15,memories:[],stats:{}};
   if(!S.data.memory.memories) S.data.memory.memories=[];
+  loadBrain();
   return true;
+}
+
+/* ===== 脑子：跟账本同目录的 brain.json（0.4.68 电子内分泌）===== */
+function brainFile(){
+  var f=String(S.dataFile||'');
+  var i=f.lastIndexOf('/');
+  return (i>=0?f.slice(0,i+1):'')+'brain.json';
+}
+function loadBrain(){
+  S.brain=null;
+  try{
+    var r=call('readBackup',[brainFile()]);
+    if(r&&r.success&&r.content){
+      var j=JSON.parse(r.content);
+      if(j&&j.nt) S.brain=j;
+    }
+  }catch(e){ S.brain=null; }
+}
+var BRAIN_BASE={da:45,se:55,ne:35,ox:50,co:20};
+var BRAIN_HALF={da:1.6,se:14,ne:2.2,ox:9,co:5};
+var BRAIN_LABEL={da:'多巴胺',se:'血清素',ne:'去甲',ox:'催产素',co:'皮质醇'};
+var BRAIN_SUB={da:'想要',se:'安稳',ne:'绷紧',ox:'靠近',co:'受压'};
+var BRAIN_COLOR={da:'#F2A93B',se:'#5B8DEF',ne:'#E0574B',ox:'#E86A9B',co:'#7B6BD6'};
+/* 面板这边也走一遍同样的回归：不动账本，只算此刻 */
+function brainNow(){
+  var b=S.brain;
+  if(!b||!b.nt) return null;
+  var nt={},k;
+  for(k in BRAIN_BASE){ nt[k]=Number(b.nt[k]); if(isNaN(nt[k])) nt[k]=BRAIN_BASE[k]; }
+  var now=Date.now();
+  var dt=(now-Number(b.t||now))/3600000;
+  if(dt>0){
+    if(dt>720) dt=720;
+    for(k in BRAIN_BASE){
+      var hl=Number(BRAIN_HALF[k])||6;
+      nt[k]=BRAIN_BASE[k]+(nt[k]-BRAIN_BASE[k])*Math.exp(-Math.LN2*dt/hl);
+    }
+  }
+  var v=0.32*(nt.da/100)+0.42*(nt.se/100)+0.26*(nt.ox/100)-0.50*(nt.co/100)+0.15;
+  var a=0.42*(nt.ne/100)+0.30*(nt.da/100)+0.28*(nt.co/100);
+  v=Math.max(0,Math.min(1,v)); a=Math.max(0,Math.min(1,a));
+  return {nt:nt,v:v,a:a,at:b.t};
+}
+function brainFeel(nt){
+  var d={},k,w=[];
+  for(k in BRAIN_BASE) d[k]=nt[k]-BRAIN_BASE[k];
+  if(d.ox>=12)w.push('挂念'); else if(d.ox<=-12)w.push('疏');
+  if(d.da>=12&&d.ox>=8)w.push('想凑近'); else if(d.da>=12)w.push('有劲'); else if(d.da<=-12)w.push('提不起');
+  if(d.se>=10)w.push('安稳'); else if(d.se<=-12)w.push('发空');
+  if(d.co>=20)w.push('闷'); else if(d.co>=10)w.push('压着');
+  if(d.ne>=15)w.push(d.co>=10?'绷着':'警觉');
+  if(!w.length)w.push('平常');
+  return w.slice(0,3);
+}
+function brainHTML(){
+  var n=brainNow();
+  if(!n) return '<div class="muted" style="margin-top:6px">还没长出来——下一次出门逛，这五个数就有了。</div>';
+  var w=brainFeel(n.nt);
+  var h='<div class="brain">';
+  for(var k in BRAIN_BASE){
+    var v=Math.max(0,Math.min(100,n.nt[k]));
+    h+='<div class="br-row"><span class="br-k">'+BRAIN_LABEL[k]+'<i>'+BRAIN_SUB[k]+'</i></span>'
+      +'<span class="br-bar"><span style="width:'+v.toFixed(0)+'%;background:'+(BRAIN_COLOR[k]||'#999')+'"></span></span>'
+      +'<span class="br-v">'+v.toFixed(0)+'</span></div>';
+  }
+  h+='<div class="br-foot">此刻 '+esc(w.join(' · '))+'　心情 '+n.v.toFixed(2)+' / 起伏 '+n.a.toFixed(2)+'</div>';
+  h+='</div>';
+  return h;
 }
 function save(){
   if(!S.data) return;
@@ -547,6 +644,69 @@ function linkRow(url){
 }
 
 /* ============ 手记页 ============ */
+/* 心情坐标：valence 冷→暖，arousal 决定点的大小 */
+function moodColor(v){
+  v=Math.max(0,Math.min(1,Number(v)));
+  if(isNaN(v)) v=0.5;
+  var r,g,b,t;
+  if(v<0.5){ t=v*2; r=Math.round(120+(200-120)*t); g=Math.round(140+(190-140)*t); b=Math.round(170+(200-170)*t); }
+  else { t=(v-0.5)*2; r=Math.round(200+(255-200)*t); g=Math.round(190+(110-190)*t); b=Math.round(200+(160-200)*t); }
+  return 'rgb('+r+','+g+','+b+')';
+}
+/* 两个数翻成人话 */
+function moodWords(v,a){
+  var vw = v<0.25?'很低' : v<0.42?'有点沉' : v<0.58?'平' : v<0.75?'偏亮' : '亮';
+  var aw = a<0.25?'很静' : a<0.5?'安静' : a<0.75?'有起伏' : '翻得厉害';
+  return vw+' · '+aw;
+}
+function moodRow(md){
+  if(!md) return '';
+  var v=Number(md.valence); if(isNaN(v)) v=0.5;
+  var a=Number(md.arousal); if(isNaN(a)) a=0.3;
+  v=Math.max(0,Math.min(1,v)); a=Math.max(0,Math.min(1,a));
+  var size=Math.round(10+16*a);
+  var feels=(md.feel||[]).map(function(f){ return '<span class="mood-chip">'+esc(f)+'</span>'; }).join('');
+  return '<div class="mood-row"><span class="mood-bar" style="width:'+size+'px;background:'+moodColor(v)+'"></span>'
+    +feels+'<span class="mood-num">'+moodWords(v,a)
+    +'<span style="opacity:.45;margin-left:4px">'+v.toFixed(2)+'/'+a.toFixed(2)+'</span></span></div>';
+}
+/* 心情坐标条：点落在 valence 上，点的大小跟 arousal 走，颜色从冷到暖 */
+
+/* 心情走势：横轴是这十四天，竖着看是起伏，颜色是心情——像一条波形，不是散点 */
+function moodMapHTML(days){
+  days=days||14;
+  var cut=new Date(); cut.setDate(cut.getDate()-(days-1)); cut.setHours(0,0,0,0);
+  var pts=[], all=allRecords();
+  for(var i=0;i<all.length;i++){
+    var r=all[i];
+    if(!r.mood||(r.ts||0)<cut.getTime()) continue;
+    var v=Number(r.mood.valence); if(isNaN(v)) v=0.5;
+    var a=Number(r.mood.arousal); if(isNaN(a)) a=0.3;
+    v=Math.max(0,Math.min(1,v)); a=Math.max(0,Math.min(1,a));
+    pts.push({v:v,a:a,ts:r.ts||0,date:r.date||''});
+  }
+  if(!pts.length) return '<div class="muted" style="font-size:11px">这几天还没记心情。</div>';
+  pts.sort(function(x,y){ return x.ts-y.ts; });
+  var W=320, H=104, pad=10;
+  var t0=pts[0].ts, t1=pts[pts.length-1].ts, span=(t1-t0)||1;
+  function px(p){ return pad+((p.ts-t0)/span)*(W-pad*2); }
+  function py(p){ return pad+(1-p.a)*(H-pad*2); }
+  var line=[];
+  for(var k=0;k<pts.length;k++) line.push(px(pts[k]).toFixed(1)+','+py(pts[k]).toFixed(1));
+  var mid=(pad+(H-pad*2)/2).toFixed(1);
+  var h='<div class="mood-wave"><svg viewBox="0 0 '+W+' '+H+'" width="100%" height="104" preserveAspectRatio="xMidYMid meet">';
+  h+='<line x1="'+pad+'" y1="'+mid+'" x2="'+(W-pad)+'" y2="'+mid+'" stroke="#EFE8F5" stroke-width="1" stroke-dasharray="3 4"/>';
+  if(pts.length>1) h+='<polyline points="'+line.join(' ')+'" fill="none" stroke="#E3D9EE" stroke-width="1.2" stroke-linejoin="round"/>';
+  for(var j=0;j<pts.length;j++){
+    var p=pts[j];
+    h+='<circle cx="'+px(p).toFixed(1)+'" cy="'+py(p).toFixed(1)+'" r="'+(3+4*p.a).toFixed(1)
+      +'" fill="'+moodColor(p.v)+'" fill-opacity="0.85"/>';
+  }
+  h+='</svg>';
+  h+='<div class="mood-axis"><span>'+esc(pts[0].date)+'</span><span>平静 ↔ 起伏</span><span>'+esc(pts[pts.length-1].date)+'</span></div>';
+  h+='</div>';
+  return h;
+}
 function recCard(r){
   var open=!!S.openRec[r.id];
   var items=r.items||[];
@@ -569,6 +729,7 @@ function recCard(r){
   if(peek) h+='<div class="rec-peek">'+peek+'</div>';
   if(peekSub) h+='<div class="rec-sub">'+peekSub+'</div>';
   if(meta) h+='<div class="rec-meta">'+meta+'</div>';
+  if(r.mood) h+=moodRow(r.mood);
   if(tags) h+='<div style="margin-top:6px">'+tags+'</div>';
   h+='</div>';
   h+='<div class="rec-body">';
@@ -600,6 +761,7 @@ function diaryHTML(r){
   return '<div class="diary-sheet">'
     +'<div class="diary-h">'+esc(dg.title||'（无题）')+'</div>'
     +'<div class="diary-m">'+esc(r.date||'')+' '+esc(r.time||'')+platBadge(r.platform)+'</div>'
+    +(r.mood?moodRow(r.mood):'')
     +'<div class="diary-tags">'+((dg.tags&&dg.tags.length?dg.tags:(r.tags||[]))).map(function(t){return tagChip(t);}).join('')+'</div>'
     +'<div class="diary-body">'+esc(dg.content||'')+'</div>'
     +'</div>';
@@ -668,12 +830,14 @@ function notesMain(){
   h+='<div class="card tight" id="calbox">'+calendarHTML()+'</div>';
   h+='<div style="margin-top:10px"><button class="btn pri wide" data-act="urge">'
     +(S.data.manual_request?'已经排上队了 ✓':'催我出门逛一趟')+'</button></div>';
+  h+='<div style="margin-top:12px"><div class="muted" style="margin-bottom:2px">这十四天，心情的走势</div>'+moodMapHTML(14)+'</div>';
+  h+='<div style="margin-top:12px"><div class="muted" style="margin-bottom:2px">这会儿的内分泌</div>'+brainHTML()+'</div>';
   h+='</div>';
 
   // 工具条
   h+='<div class="search'+(S.q?' has':'')+'" id="searchbox">'
     +'<span class="mag">🔍</span>'
-    +'<input type="text" id="q" placeholder="搜 AI 逛过什么——标题、梗概、标签、评论都能搜" value="'+esc(S.q)+'" />'
+    +'<input type="text" id="q" placeholder="搜我逛过什么——标题、梗概、标签、评论都能搜" value="'+esc(S.q)+'" />'
     +'<span class="clr" data-act="clear-q">✕</span></div>';
 
   h+='<div class="chips" id="notebar" style="margin-bottom:7px">'+chipsHTML()+'</div>';
@@ -703,7 +867,7 @@ function notesList(){
   var h='';
   if(!recs.length){
     h+='<div class="empty"><div class="big">🗒</div><p>'
-      +(all.length? '这个条件下没翻到东西，换个词试试' : '还没出门逛过，下一次唤醒后会自动出门')
+      +(all.length? '这个条件下没翻到东西，换个词试试' : '还没出门逛过，等下一次唤醒我就出去转转')
       +'</p></div>';
     return h;
   }
@@ -743,7 +907,7 @@ function wfMain(){
   var h='';
   h+='<div class="card">';
   h+='<div class="sec-h" style="margin:0 0 6px"><span class="bar"></span>工作流提示词</div>';
-  h+='<div class="hint" style="margin-top:0">这里改的是「闲逛手记」工作流里的指令段，AI 出门前按它执行。改完点「保存这段」，下一趟生效。</div>';
+  h+='<div class="hint" style="margin-top:0">这儿改的是「闲逛手记」工作流里那几段指令——我出门前读的就是它。改完点「保存这段」，下一趟就按新的走。</div>';
   h+='<div style="margin:10px 0"><button class="btn sm pri" data-act="wf-reload">重新读取</button><span class="muted" style="margin-left:10px">刚进来先点它一下</span></div>';
   var ps=S.wfPrompts;
   if(!ps||!ps.length){
@@ -761,13 +925,13 @@ function wfMain(){
   var cap=(prefs.speech_cap===undefined?3:prefs.speech_cap);
   var bias=(prefs.dive_bias===undefined?50:prefs.dive_bias);
   h+='<div class="sec-h" style="margin:20px 0 6px"><span class="bar"></span>潜水设置</div>';
-  h+='<div class="hint" style="margin-top:0">两项只限定发言范围，具体说不说话由 AI 自行判断。</div>';
+  h+='<div class="hint" style="margin-top:0">两个数只管圈个范围，说不说话还是我自己拿捏。</div>';
   h+='<div style="margin:12px 0 4px;font-weight:600">每天发言上限</div>';
   h+='<input type="number" min="0" max="50" data-sp="cap" value="'+esc(String(cap))+'">';
   h+='<div class="hint" style="margin-top:4px">今天最多开口几次。调到 <b>0</b> = 这趟只读不回。</div>';
   h+='<div style="margin:16px 0 4px;font-weight:600">潜水倾向 <span class="muted" id="spBiasV">'+esc(String(bias))+'%</span></div>';
   h+='<input type="range" min="0" max="100" step="5" data-sp="bias" value="'+esc(String(bias))+'">';
-  h+='<div class="hint" style="margin-top:6px"><b>0%</b> 见人就搭话 · <b>50%</b> 一半一半 · <b>100%</b> 只看不说。这是每次出门的默认倾向，不是硬性规则。</div>';
+  h+='<div class="hint" style="margin-top:6px"><b>0%</b> 见人就搭话 · <b>50%</b> 一半一半 · <b>100%</b> 只看不说。这是「今天想不想说话」的底噪，不是硬规矩——真碰上有意思的，我还是会开口。</div>';
   h+='<div style="margin-top:14px"><button class="btn sm pri" data-act="sp-save">保存设置</button></div>';
   h+='<div class="row" style="margin-top:18px;gap:8px">';
   h+='<button class="btn ghost" data-act="wf-run">现在跑一趟</button>';
@@ -823,7 +987,7 @@ function settingsMain(){
   // 日记写法规则
   h+='<div class="card">';
   h+='<div class="sec-h" style="margin:0 0 4px"><span class="bar"></span>日记写法规则</div>';
-  h+='<div class="hint" style="margin-top:0">AI 写「闲逛日记」时按这个来。可随时修改，改完下一趟按新的写。</div>';
+  h+='<div class="hint" style="margin-top:0">我写「闲逛日记」时照这个来。您随便改，改完下一趟就按新的写。</div>';
   h+='<textarea rows="6" data-note="diary_rule">'+esc(prefs.diary_rule||DEFAULT_DIARY_RULE)+'</textarea>';
   h+='<div style="margin-top:9px"><button class="btn ghost wide" data-act="rule-reset">恢复默认规则</button></div>';
   h+='</div>';
@@ -831,8 +995,8 @@ function settingsMain(){
   // 偏好标签
   var ut=prefs.user_tags||[];
   h+='<div class="card">';
-  h+='<div class="sec-h" style="margin:0 0 4px"><span class="bar"></span>AI 该多逛什么</div>';
-  h+='<div class="hint" style="margin-top:0">已添加的偏好标签，AI 会优先逛这些方向。</div>';
+  h+='<div class="sec-h" style="margin:0 0 4px"><span class="bar"></span>我该多逛什么</div>';
+  h+='<div class="hint" style="margin-top:0">您加的标签，我会往那边多逛一点。</div>';
   if(ut.length){
     for(var u=0;u<ut.length;u++){
       h+='<div class="row" style="margin-top:7px"><input type="text" data-utag="'+u+'" value="'+esc(ut[u].tag||'')+'" placeholder="标签名" />'
@@ -849,7 +1013,7 @@ function settingsMain(){
   var bt=prefs.blocked_tags||[];
   h+='<div class="card">';
   h+='<div class="sec-h" style="margin:0 0 4px"><span class="bar"></span>别再逛这些</div>';
-  h+='<div class="hint" style="margin-top:0">不想让 AI 再碰的标签写在这里，这些标签也不会出现在兴趣圈里。</div>';
+  h+='<div class="hint" style="margin-top:0">不想我再碰的，写这儿。这些标签的圈也不会出现。</div>';
   if(bt.length){
     h+='<div style="margin-top:7px">';
     for(var b=0;b<bt.length;b++){
@@ -884,8 +1048,8 @@ function platCard(p,idx){
   h+='<label class="f">适配器（工具包）</label><input type="text" data-plat="'+idx+'" data-f="adapter" value="'+esc(p.adapter||'')+'" placeholder="例如 bilibili_tools" />';
 
   h+='<div class="divider"></div>';
-  h+='<div style="font-size:12.5px;font-weight:700;margin-bottom:2px">AI 能对它做什么</div>';
-  h+='<div class="hint" style="margin:0 0 4px">默认全部关闭。开启后 AI 才能执行对应动作，关闭时只读。</div>';
+  h+='<div style="font-size:12.5px;font-weight:700;margin-bottom:2px">我能对它做什么</div>';
+  h+='<div class="hint" style="margin:0 0 4px">默认全关。开了我才敢动手，没开就只许看。</div>';
   for(var k=0;k<PERMS.length;k++){
     var pm=PERMS[k];
     h+=swRow(pm.label,!!(p.permissions&&p.permissions[pm.k]),'t-perm',idx+'|'+pm.k);
@@ -1227,7 +1391,7 @@ function statsMain(){
       var lpct=Math.round((Math.max(0,Number(t.count)||0)/lgTotal)*100);
       h+='<div class="lg'+(S.chartPick===i?' on':'')+'" data-i="'+i+'"><span class="dot" style="background:'+PALETTE[i%PALETTE.length]+'"></span>'
         +'<span class="nm">'+esc(t.tag)+'</span>'
-        +(t.mine?'<span class="own">已添加</span>':'')
+        +(t.mine?'<span class="own">您加的</span>':'')
         +'<span class="ct">'+t.count+' 条 · '+lpct+'%</span></div>';
     }
     h+='</div>';
@@ -1327,7 +1491,7 @@ function trailMain(){
   var mS='font-size:11px;color:var(--ink3);margin-top:3px';
 
   h+='<div class="card">';
-  h+='<div class="sec-h" style="margin:0 0 4px"><span class="bar"></span>动作流水 · 执行记录</div>';
+  h+='<div class="sec-h" style="margin:0 0 4px"><span class="bar"></span>动作流水 · 我干过什么</div>';
   h+='<div class="hint" style="margin-top:0">点过赞、评过论、收藏过谁——一条条记着。共 '+acts.length+' 条。</div>';
   var gm=S.actGroup||'time';
   h+='<div class="chips wrapx" style="margin-top:9px">';
@@ -1404,14 +1568,14 @@ function memoryMain(){
 
   h+='<div class="card">';
   h+='<div class="sec-h" style="margin:0 0 4px"><span class="bar"></span>存储模式</div>';
-  h+='<div class="hint" style="margin-top:0">记忆与手记已合并，这里存的就是日记本身。</div>';
+  h+='<div class="hint" style="margin-top:0">手记是记录，记忆是感受——两本分开存。这里管的是后者。</div>';
   h+='<div class="chips wrapx" style="margin-top:9px">';
   h+='<span class="chip'+(!keep?' on':'')+'" data-act="mem-mode" data-v="forget">遗忘模式</span>';
   h+='<span class="chip'+(keep?' on':'')+'" data-act="mem-mode" data-v="keep">永不遗忘</span>';
   h+='</div>';
   h+='<div class="hint">'+(keep
     ?'永不遗忘：只降权，不删、不压缩。记忆会一直在。'
-    :'遗忘模式：淡到一定程度先压成概括（模糊/美化），再淡就删除。')+'</div>';
+    :'遗忘模式：淡到一定程度先压成概括（模糊/美化），再淡就真删。')+'</div>';
   h+='</div>';
 
   if(!keep){
@@ -1427,12 +1591,12 @@ function memoryMain(){
     h+='<input type="range" min="0" max="1" step="0.05" value="'+esc(String(m.blur||0.3))+'" data-range="blur" />';
     h+='<div class="muted">0 = 原样记着，1 = 全凭印象。推荐不低于 0.3。</div>';
 
-    h+=swRow('淡化后先压缩成概括（节省空间）',m.compress,'t-mem','compress');
-    h+=swRow('每次闲逛自动执行一次遗忘曲线',m.auto_tick!==false,'t-mem','auto_tick');
-    h+='<div class="hint">压缩使用 Operit 已绑定的模型，无需另外配置 key。压到低于 '
+    h+=swRow('淡了就先压成概括（省地方）',m.compress,'t-mem','compress');
+    h+=swRow('每次闲逛顺手走一遍遗忘曲线',m.auto_tick!==false,'t-mem','auto_tick');
+    h+='<div class="hint">压缩会用 Operit 已经绑好的那个小模型，不用您另外配 key。压到低于 '
       +Number(m.forget_threshold||0.15).toFixed(2)+' 就删。</div>';
     h+='<div style="margin-top:11px"><button class="btn ghost wide" data-act="mem-tick">现在走一遍遗忘曲线</button></div>';
-    h+='<div class="muted" style="margin-top:10px">改完记得点保存，未保存不会写入。</div>';
+    h+='<div class="muted" style="margin-top:10px">调完记得点保存——不点就不落盘，拖错了也跑不掉。</div>';
     h+='<div class="row" style="gap:9px;margin-top:8px"><button class="btn pri" style="flex:1" data-act="mem-save">保存设置</button>'
       +'<button class="btn ghost" style="flex:1" data-act="mem-reset">恢复默认</button></div>';
     h+='</div>';
@@ -1451,7 +1615,7 @@ function memoryMain(){
   h+='<div class="hint" style="margin-top:4px">被记起 '+((st.recalls)||0)+' 次 · 压缩过 '+((st.compressed)||0)+' 条 · 忘掉 '+((st.forgotten)||0)+' 条</div>';
 
   if(!mems.length){
-    h+='<div class="empty" style="padding:28px 10px"><div class="big">🧠</div><p>记忆库还是空的，等 AI 出去逛一趟就有了</p></div>';
+    h+='<div class="empty" style="padding:28px 10px"><div class="big">🧠</div><p>记忆库还是空的，等我出去逛一趟就有了</p></div>';
   }
   var memShow=S.memShowAll?mems:mems.slice(0,3);
   for(var i=0;i<memShow.length;i++){
@@ -1626,7 +1790,7 @@ function vaultMain(){
         h+='</div>';
       }
       h+='</div>';
-      h+='<div class="swipe-hintline">左滑一行能删掉它；在用的那本和注册表动不得。删除时可选择：留痕删（先抄进 backup/）或直接删。</div>';
+      h+='<div class="swipe-hintline">左滑一行能删掉它；在用的那本和注册表动不得。删除会让您挑：留痕删（先抄进 backup/）还是直接删。</div>';
     }
   }
   h+='</div>';
@@ -1634,7 +1798,7 @@ function vaultMain(){
   // 备份
   h+='<div class="card">';
   h+='<div class="sec-h" style="margin:0 0 4px"><span class="bar"></span>导出</div>';
-  h+='<div class="hint" style="margin-top:0">导出到 闲逛手记/backup/ 里，可随时查看。</div>';
+  h+='<div class="hint" style="margin-top:0">导到 闲逛手记/backup/ 里，随您去翻。</div>';
   h+='<div style="margin-top:9px"><button class="btn pri wide" data-act="backup-all">全量导出一份</button></div>';
   h+='<div class="divider"></div>';
   h+='<div style="font-size:12.5px;font-weight:700">分块导出</div>';
@@ -1650,7 +1814,7 @@ function vaultMain(){
   // 导入
   h+='<div class="card">';
   h+='<div class="sec-h" style="margin:0 0 4px"><span class="bar"></span>导入</div>';
-  h+='<div class="hint" style="margin-top:0">导入前会自动留一份备份，覆盖出错还能退回。</div>';
+  h+='<div class="hint" style="margin-top:0">导入前我会先自动留一份底，覆盖坏了还能退回来。</div>';
   h+='<div class="chips wrapx" style="margin-top:8px">';
   [['replace','整块覆盖'],['merge','只补新的']].forEach(function(m){
     h+='<span class="chip'+((S.impMode||'replace')===m[0]?' on':'')+'" data-act="imp-mode" data-v="'+m[0]+'">'+m[1]+'</span>';
@@ -1707,7 +1871,7 @@ function render(){
 
   /* 页面版本跟桥对不上 = 您眼前这份是旧缓存。直说，别让您对着老界面找毛病。 */
   if(S.bridgeVer && PAGE_VER && S.bridgeVer!==PAGE_VER){
-    h+='<div class="stale">⚠ 当前这份页面是旧的（页 '+esc(PAGE_VER)+' / 桥 '+esc(S.bridgeVer)
+    h+='<div class="stale">⚠ 您看的这份页面是旧的（页 '+esc(PAGE_VER)+' / 桥 '+esc(S.bridgeVer)
       +'）。把侧栏整个关掉、再重开一次；不行就重启 Operit。只点右上那个刷新键不够。</div>';
   }
 
@@ -1918,6 +2082,10 @@ function bindInputs(){
       })]);
     }catch(e){}
   };
+  // 打开面板时对一次账：工作流里的间隔/时间窗跟账本不一致就回填，一致就不动
+  window.reconcileSched=function(){
+    try{ call('reconcileSchedule',['{}']); }catch(e){}
+  };
   // 定时那四个数只在「确定」时落盘：边打边存会反复唤醒工作流
   eachEl('[data-num]',function(el){
     el.addEventListener('input',function(){
@@ -2093,7 +2261,7 @@ function useFile(rel){
   // 桥也认不出：先确认这份文件还在不在。不在就别登记——不然刚删掉的档
   // 又被凭空复活一本，看着像删不掉，还能无限循环。
   if(!fileExistsSync(rel)){
-    toast('这份文件已经不在了，列表已重新扫描');
+    toast('这份文件已经不在了，列表给您重扫一遍');
     loadAll(); refreshAfterFileChange();
     return;
   }
@@ -2218,7 +2386,7 @@ document.addEventListener('click',function(ev){
     case 'clear-q': S.q=''; var qi=$('q'); if(qi){qi.value='';} var sb=$('searchbox'); if(sb){sb.classList.remove('has');} rerenderNotes(); break;
     case 'urge':
       S.data.manual_request={ts:Date.now(),by:'user'};
-      save(); render(); toast('记下了——下次醒来，第一件事就是出门逛'); break;
+      save(); render(); toast('记下了——下次醒来，我头一件事就是出门逛'); break;
 
     /* 链接 */
     case 'open':
@@ -2489,7 +2657,7 @@ document.addEventListener('click',function(ev){
     case 'do-import':
       if(oldBridgeWarn()) break;
       confirmModal('导入这份备份？',
-        '会按勾选的块写进当前这本手记。动手前会自动导出备份，出错能退。',
+        '会按您勾的块写进当前这本手记。动手前我会先自动导一份底出来，坏了能退。',
         function(){
           var mode=S.impMode||'replace';
           var blocks=(S.impBlocks&&S.impBlocks.length)?S.impBlocks:null;
@@ -2526,7 +2694,7 @@ function doImportFrom(path){
   if(!path) return;
   if(oldBridgeWarn()) return;
   confirmModal('导入这份文件？',
-    '会按勾选的块写进当前这本手记。动手前会自动导出备份，出错能退。',
+    '会按您勾的块写进当前这本手记。动手前我会先自动导一份底出来，坏了能退。',
     function(){
       var mode=S.impMode||'replace';
     var blocks=(S.impBlocks&&S.impBlocks.length)?S.impBlocks:null;
@@ -2576,7 +2744,7 @@ function openDeleteFile(path, nm){
   m.className='mask'; m.id='mask';
   m.innerHTML='<div class="modal"><h3>删掉「'+esc(nm||'这份文件')+'」？</h3>'
     +'<div class="dangerbox"><div class="t">这一步不好回头</div>'
-    +'<div class="d">两种删除方式：留痕删会先整份抄进 backup/ 留底；直接删不留底，删掉即不可恢复。</div></div>'
+    +'<div class="d">两种删法，您挑一个：留痕删会先整份抄进 backup/ 留底；直接删不留底，删了就真没了。</div></div>'
     +'<div class="acts" style="margin-top:12px;gap:8px;flex-wrap:wrap">'
     +'<button class="btn ghost" data-act="modal-cancel">再想想</button>'
     +'<button class="btn pri" data-act="del-file-soft" data-k="'+esc(path)+'">留痕删除</button>'
@@ -2601,7 +2769,7 @@ function openDeleteProfile(id, nm){
   m.className='mask'; m.id='mask';
   m.innerHTML='<div class="modal"><h3>删掉「'+esc(nm||'这本')+'」？</h3>'
     +'<div class="dangerbox"><div class="t">这一步不好回头</div>'
-    +'<div class="d">这本会从列表里摘掉，它的数据文件也一并清掉。两种删除方式：留痕删会先把整本抄进 backup/ 留底；直接删不留底，删掉即不可恢复。</div></div>'
+    +'<div class="d">这本会从列表里摘掉，它的数据文件也一并清掉。两种删法，您挑一个：留痕删会先把整本抄进 backup/ 留底；直接删不留底，删了就真没了。</div></div>'
     +'<div class="acts" style="margin-top:12px;gap:8px;flex-wrap:wrap">'
     +'<button class="btn ghost" data-act="modal-cancel">再想想</button>'
     +'<button class="btn pri" data-act="del-pf-soft" data-k="'+esc(id)+'">留痕删除</button>'
@@ -2629,7 +2797,7 @@ function openAddProfile(){
   var m=document.createElement('div');
   m.className='mask'; m.id='mask';
   m.innerHTML='<div class="modal"><h3>新起一本手记</h3>'
-    +'<label class="f">叫什么</label><input type="text" id="np_name" placeholder="比如：另一个 AI" />'
+    +'<label class="f">叫什么</label><input type="text" id="np_name" placeholder="比如：另一个我" />'
     +'<label class="f">绑哪个角色卡</label><input type="text" id="np_card" placeholder="写角色卡名" />'
     +(ch?('<div class="chips" style="margin-top:6px">'+ch+'</div>'):'')
     +'<label class="f">出门逛时的口吻</label><textarea rows="2" id="np_persona" placeholder="比如：话少，爱看旧东西。"></textarea>'
@@ -2685,6 +2853,8 @@ function boot(){
     call('log',['桥自检 版本='+((pg&&pg.version)||'?')+' 参数形态='+S.bridgeShape+' 有('+have.length+'):'+have.join(',')+' 缺('+miss.length+'):'+miss.join(',')]);
   }catch(e){}
   render();
+  // 打开面板先对一次账：工作流跟账本对不上就回填（一致不动，避免白折腾）
+  setTimeout(function(){ try{ if(window.reconcileSched) window.reconcileSched(); }catch(e){} },1500);
   // 定时软刷新：让「上次上线/下线」跟着账本走。正在打字或开着弹窗时不打断。
   if(!window.__softTimer){
     window.__softTimer=setInterval(function(){
